@@ -11,7 +11,7 @@ The module contains functions that are applicable to simulation data -- where th
 
         git clone https://github.com/r-jturner/crosscorr.git
 
-2. Inside /src/, run the Makefile using 'make' - you may need to modify the Makefile to match your compiler. This will compile the C code in the repo and create a shared object (.so file) that is required by the python wrapper.
+2. Inside /src/, run the Makefile using 'make' - you may need to modify the Makefile to match your compiler (this compiler must be able to handle OpenMP code). This will compile the C code in the repo and create a shared object (.so file) that is required by the python wrapper.
 
 3. It should then be possible to make python scripts within the directory using the crosscorr functions, as long as you import 'corr_desi_wrapper' along with your usual packages.
 
