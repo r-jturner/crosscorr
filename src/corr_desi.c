@@ -50,7 +50,7 @@ struct lin_corr calcCorr(double x1, double y1, double z1, double x2, double y2, 
 }
 
 struct output *pairCounter(int drows, int rrows, int equiv, const double sample1[drows][4], const double sample2[rrows][4], 
-                 int smax, int swidth, const char* estimator, int nthreads){
+                 const double weights1[drows], const double weights2[rrows], int smax, int swidth, const char* estimator, int nthreads){
     long long i,j;
     struct lin_corr pair;
     /* allocate the memory for the output structure */
@@ -87,8 +87,8 @@ struct output *pairCounter(int drows, int rrows, int equiv, const double sample1
                                         sample2[j][0], sample2[j][1], sample2[j][2],
                                         sample1[i][3], sample2[j][3], swidth);
                         if (pair.index < numBins && pair.index >= 0) {
-                            num[pair.index] += pair.cosAB*(pair.uA*pair.uB);
-                            den[pair.index] += pair.cosAB*pair.cosAB;
+                            num[pair.index] += (weights1[i] * weights2[j])*pair.cosAB*(pair.uA*pair.uB);
+                            den[pair.index] += (weights1[i] * weights2[j])*pair.cosAB*pair.cosAB;
                         }
                     }
                 }
@@ -103,8 +103,8 @@ struct output *pairCounter(int drows, int rrows, int equiv, const double sample1
                                         sample2[j][0], sample2[j][1], sample2[j][2],
                                         sample1[i][3], sample2[j][3], swidth);
                         if (pair.index < numBins && pair.index >= 0) {
-                            num[pair.index] += pair.cosA*pair.cosB*(pair.uA*pair.uB);
-                            den[pair.index] += pair.cosA*pair.cosA*pair.cosAB;
+                            num[pair.index] += (weights1[i] * weights2[j])*pair.cosA*pair.cosB*(pair.uA*pair.uB);
+                            den[pair.index] += (weights1[i] * weights2[j])*pair.cosA*pair.cosA*pair.cosAB;
                         }
                     }
                 }
@@ -119,8 +119,8 @@ struct output *pairCounter(int drows, int rrows, int equiv, const double sample1
                                         sample2[j][0], sample2[j][1], sample2[j][2],
                                         sample1[i][3], sample2[j][3], swidth);
                         if (pair.index < numBins && pair.index >= 0) {
-                            num[pair.index] += pair.cosB*pair.uB;
-                            den[pair.index] += pair.cosB*pair.cosB;
+                            num[pair.index] += (weights1[i] * weights2[j])*pair.cosB*pair.uB;
+                            den[pair.index] += (weights1[i] * weights2[j])*pair.cosB*pair.cosB;
                         }
                     }
                 }
@@ -135,7 +135,7 @@ struct output *pairCounter(int drows, int rrows, int equiv, const double sample1
                                         sample2[j][0], sample2[j][1], sample2[j][2],
                                         sample1[i][3], sample2[j][3], swidth);
                         if (pair.index < numBins && pair.index >= 0) {
-                            num[pair.index] += 1.0;
+                            num[pair.index] += (weights1[i] * weights2[j])*1.0;
                             den[pair.index] += 0.0;
                         }
                     }
@@ -160,8 +160,8 @@ struct output *pairCounter(int drows, int rrows, int equiv, const double sample1
                                         sample2[j][0], sample2[j][1], sample2[j][2],
                                         sample1[i][3], sample2[j][3], swidth);
                         if (pair.index < numBins && pair.index >= 0) {
-                            num[pair.index] += pair.cosAB*(pair.uA*pair.uB);
-                            den[pair.index] += pair.cosAB*pair.cosAB;
+                            num[pair.index] += (weights1[i] * weights2[j])*pair.cosAB*(pair.uA*pair.uB);
+                            den[pair.index] += (weights1[i] * weights2[j])*pair.cosAB*pair.cosAB;
                         }
                     }
                 }
@@ -176,8 +176,8 @@ struct output *pairCounter(int drows, int rrows, int equiv, const double sample1
                                         sample2[j][0], sample2[j][1], sample2[j][2],
                                         sample1[i][3], sample2[j][3], swidth);
                         if (pair.index < numBins && pair.index >= 0) {
-                            num[pair.index] += pair.cosA*pair.cosB*(pair.uA*pair.uB);
-                            den[pair.index] += pair.cosA*pair.cosB*pair.cosAB;
+                            num[pair.index] += (weights1[i] * weights2[j])*pair.cosA*pair.cosB*(pair.uA*pair.uB);
+                            den[pair.index] += (weights1[i] * weights2[j])*pair.cosA*pair.cosB*pair.cosAB;
                         }
                     }
                 }
@@ -192,8 +192,8 @@ struct output *pairCounter(int drows, int rrows, int equiv, const double sample1
                                         sample2[j][0], sample2[j][1], sample2[j][2],
                                         sample1[i][3], sample2[j][3], swidth);
                         if (pair.index < numBins && pair.index >= 0) {
-                            num[pair.index] += pair.cosB*pair.uB;
-                            den[pair.index] += pair.cosB*pair.cosB;
+                            num[pair.index] += (weights1[i] * weights2[j])*pair.cosB*pair.uB;
+                            den[pair.index] += (weights1[i] * weights2[j])*pair.cosB*pair.cosB;
                         }
                     }
                 }
@@ -208,7 +208,7 @@ struct output *pairCounter(int drows, int rrows, int equiv, const double sample1
                                         sample2[j][0], sample2[j][1], sample2[j][2],
                                         sample1[i][3], sample2[j][3], swidth);
                         if (pair.index < numBins && pair.index >= 0) {
-                            num[pair.index] += 1.0;
+                            num[pair.index] += (weights1[i] * weights2[j])*1.0;
                             den[pair.index] += 0.0;
                         }
                     }

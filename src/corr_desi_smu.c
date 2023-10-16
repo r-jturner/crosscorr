@@ -40,7 +40,7 @@ struct nonlin_corr calcCorr_smu(double x1, double y1, double z1, double x2, doub
 }
 
 struct output *pairCounter_smu(int drows, int rrows, int equiv, const double sample1[drows][4], const double sample2[rrows][4], 
-                 int smax, int swidth, double muwidth, const char* estimator, int nthreads){
+                 const double weights1[drows], const double weights2[rrows], int smax, int swidth, double muwidth, const char* estimator, int nthreads){
     long long i,j;
     struct nonlin_corr pair;
     /* allocate the memory for the output structure */
@@ -74,8 +74,8 @@ struct output *pairCounter_smu(int drows, int rrows, int equiv, const double sam
                                             sample2[j][0], sample2[j][1], sample2[j][2],
                                             sample1[i][3], sample2[j][3], swidth, muwidth);
                         if (pair.index < numBins && pair.muIndex < muBins && pair.index >= 0 && pair.muIndex >= 0) {
-                            num[pair.index*muBins + pair.muIndex] += pair.cosAB*(pair.uA*pair.uB);
-                            den[pair.index*muBins + pair.muIndex] += pair.cosAB*pair.cosAB;
+                            num[pair.index*muBins + pair.muIndex] += (weights1[i] * weights2[j])*pair.cosAB*(pair.uA*pair.uB);
+                            den[pair.index*muBins + pair.muIndex] += (weights1[i] * weights2[j])*pair.cosAB*pair.cosAB;
                         }
                     }
                 }
@@ -90,8 +90,8 @@ struct output *pairCounter_smu(int drows, int rrows, int equiv, const double sam
                                             sample2[j][0], sample2[j][1], sample2[j][2],
                                             sample1[i][3], sample2[j][3], swidth, muwidth);
                         if (pair.index < numBins && pair.muIndex < muBins && pair.index >= 0 && pair.muIndex >= 0) {
-                            num[pair.index*muBins + pair.muIndex] += pair.cosA*pair.cosB*(pair.uA*pair.uB);
-                            den[pair.index*muBins + pair.muIndex] += pair.cosA*pair.cosA*pair.cosAB;
+                            num[pair.index*muBins + pair.muIndex] += (weights1[i] * weights2[j])*pair.cosA*pair.cosB*(pair.uA*pair.uB);
+                            den[pair.index*muBins + pair.muIndex] += (weights1[i] * weights2[j])*pair.cosA*pair.cosA*pair.cosAB;
                         }
                     }
                 }
@@ -106,8 +106,8 @@ struct output *pairCounter_smu(int drows, int rrows, int equiv, const double sam
                                             sample2[j][0], sample2[j][1], sample2[j][2],
                                             sample1[i][3], sample2[j][3], swidth, muwidth);
                         if (pair.index < numBins && pair.muIndex < muBins && pair.index >= 0 && pair.muIndex >= 0)  {
-                            num[pair.index*muBins + pair.muIndex] += pair.cosB*pair.uB;
-                            den[pair.index*muBins + pair.muIndex] += pair.cosB*pair.cosB;
+                            num[pair.index*muBins + pair.muIndex] += (weights1[i] * weights2[j])*pair.cosB*pair.uB;
+                            den[pair.index*muBins + pair.muIndex] += (weights1[i] * weights2[j])*pair.cosB*pair.cosB;
                         }
                     }
                 }
@@ -122,7 +122,7 @@ struct output *pairCounter_smu(int drows, int rrows, int equiv, const double sam
                                             sample2[j][0], sample2[j][1], sample2[j][2],
                                             sample1[i][3], sample2[j][3], swidth, muwidth);
                         if (pair.index < numBins && pair.muIndex < muBins && pair.index >= 0 && pair.muIndex >= 0) {
-                            num[pair.index*muBins + pair.muIndex] += 1.0;
+                            num[pair.index*muBins + pair.muIndex] += (weights1[i] * weights2[j])*1.0;
                             den[pair.index*muBins + pair.muIndex] += 0.0;
                         }
                     }
@@ -147,8 +147,8 @@ struct output *pairCounter_smu(int drows, int rrows, int equiv, const double sam
                                             sample2[j][0], sample2[j][1], sample2[j][2],
                                             sample1[i][3], sample2[j][3], swidth, muwidth);
                         if (pair.index < numBins && pair.muIndex < muBins && pair.index >= 0 && pair.muIndex >= 0) {
-                            num[pair.index*muBins + pair.muIndex] += pair.cosAB*(pair.uA*pair.uB);
-                            den[pair.index*muBins + pair.muIndex] += pair.cosAB*pair.cosAB;
+                            num[pair.index*muBins + pair.muIndex] += (weights1[i] * weights2[j])*pair.cosAB*(pair.uA*pair.uB);
+                            den[pair.index*muBins + pair.muIndex] += (weights1[i] * weights2[j])*pair.cosAB*pair.cosAB;
                         }
                     }
                 }
@@ -163,8 +163,8 @@ struct output *pairCounter_smu(int drows, int rrows, int equiv, const double sam
                                             sample2[j][0], sample2[j][1], sample2[j][2],
                                             sample1[i][3], sample2[j][3], swidth, muwidth);
                         if (pair.index < numBins && pair.muIndex < muBins && pair.index >= 0 && pair.muIndex >= 0) {
-                            num[pair.index*muBins + pair.muIndex] += pair.cosA*pair.cosB*(pair.uA*pair.uB);
-                            den[pair.index*muBins + pair.muIndex] += pair.cosA*pair.cosB*pair.cosAB;
+                            num[pair.index*muBins + pair.muIndex] += (weights1[i] * weights2[j])*pair.cosA*pair.cosB*(pair.uA*pair.uB);
+                            den[pair.index*muBins + pair.muIndex] += (weights1[i] * weights2[j])*pair.cosA*pair.cosB*pair.cosAB;
                         }
                     }
                 }
@@ -179,8 +179,8 @@ struct output *pairCounter_smu(int drows, int rrows, int equiv, const double sam
                                             sample2[j][0], sample2[j][1], sample2[j][2],
                                             sample1[i][3], sample2[j][3], swidth, muwidth);
                         if (pair.index < numBins && pair.muIndex < muBins && pair.index >= 0 && pair.muIndex >= 0) {
-                            num[pair.index*muBins + pair.muIndex] += pair.cosB*pair.uB;
-                            den[pair.index*muBins + pair.muIndex] += pair.cosB*pair.cosB;
+                            num[pair.index*muBins + pair.muIndex] += (weights1[i] * weights2[j])*pair.cosB*pair.uB;
+                            den[pair.index*muBins + pair.muIndex] += (weights1[i] * weights2[j])*pair.cosB*pair.cosB;
                         }
                     }
                 }
@@ -195,7 +195,7 @@ struct output *pairCounter_smu(int drows, int rrows, int equiv, const double sam
                                             sample2[j][0], sample2[j][1], sample2[j][2],
                                             sample1[i][3], sample2[j][3], swidth, muwidth);
                         if (pair.index < numBins && pair.muIndex < muBins && pair.index >= 0 && pair.muIndex >= 0) {
-                            num[pair.index*muBins + pair.muIndex] += 1.0;
+                            num[pair.index*muBins + pair.muIndex] += (weights1[i] * weights2[j])*1.0;
                             den[pair.index*muBins + pair.muIndex] += 0.0;
                         }
                     }

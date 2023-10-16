@@ -7,7 +7,7 @@ _corr = cts.CDLL('src/obj/corrdesi.so')
 
 # Define a corr_smu function, and then the equivalent (x,y,z) functions too
 
-def corrPairCount(sample1, sample2, smax, swidth, estimator, vel="3D", nthreads=1):
+def corrPairCount(sample1, sample2, smax, swidth, estimator, weights1 = None, weights2 = None, vel = "3D", nthreads = 1):
     """
     Python function wrapping C function 'pairCounter' that computes estimators
     of the 2PCF, v-v auto-corr and g-v cross-corr functions.
@@ -60,8 +60,15 @@ def corrPairCount(sample1, sample2, smax, swidth, estimator, vel="3D", nthreads=
         # Otherwise set 'equiv' to 1
         equiv = 1
 
+    # Check if weight vectors have been supplied or not, if not set weights to be a vector of ones
+    if weights1 == None:
+        weights1 = np.ones(len_sample1)
+    if weights2 == None:
+        weights2 = np.ones(len_sample2)
+    
     # Prepare inputs to be passed to C
     sample1, sample2 = np.ascontiguousarray(sample1), np.ascontiguousarray(sample2)
+    weights1, weights2 = np.ascontiguousarray(weights1), np.ascontiguousarray(weights2)
     c_estimator = estimator.encode('utf-8')
 
     # Define a class to hold the outputs of the 'lin_corr' struct
@@ -83,6 +90,8 @@ def corrPairCount(sample1, sample2, smax, swidth, estimator, vel="3D", nthreads=
                                   cts.c_int,
                                   ndpointer(dtype=np.float64, ndim=2, shape=(len_sample1, ncol), flags='C_CONTIGUOUS'),
                                   ndpointer(dtype=np.float64, ndim=2, shape=(len_sample2, ncol), flags='C_CONTIGUOUS'),
+                                  ndpointer(dtype=np.float64, ndim=1, shape=len_sample1, flags="C_CONTIGUOUS"),
+                                  ndpointer(dtype=np.float64, ndim=1, shape=len_sample2, flags="C_CONTIGUOUS"),
                                   cts.c_int,
                                   cts.c_int,
                                   cts.c_char_p,
@@ -92,6 +101,8 @@ def corrPairCount(sample1, sample2, smax, swidth, estimator, vel="3D", nthreads=
                                   cts.c_int,
                                   ndpointer(dtype=np.float64, ndim=2, shape=(len_sample1, ncol), flags='C_CONTIGUOUS'),
                                   ndpointer(dtype=np.float64, ndim=2, shape=(len_sample2, ncol), flags='C_CONTIGUOUS'),
+                                  ndpointer(dtype=np.float64, ndim=1, shape=len_sample1, flags="C_CONTIGUOUS"),
+                                  ndpointer(dtype=np.float64, ndim=1, shape=len_sample2, flags="C_CONTIGUOUS"),
                                   cts.c_int,
                                   cts.c_int,
                                   cts.c_char_p,
@@ -103,10 +114,10 @@ def corrPairCount(sample1, sample2, smax, swidth, estimator, vel="3D", nthreads=
     # Run the function 'pairCounter'
     if (radial_check == 0):
         result = _corr.pairCounter_xyz(len_sample1, len_sample2, equiv, sample1, sample2,
-                                smax, swidth, c_estimator, nthreads)
+                                    weights1, weights2, smax, swidth,  c_estimator, nthreads)
     elif (radial_check == 1):
         result = _corr.pairCounter(len_sample1, len_sample2, equiv, sample1, sample2,
-                                smax, swidth, c_estimator, nthreads)
+                                    weights1, weights2, smax, swidth, c_estimator, nthreads)
     
     # Separately save the elements of the result to numpy arrays
     numerator = np.array(result[0].num[0][:])
@@ -126,7 +137,7 @@ def corrPairCount(sample1, sample2, smax, swidth, estimator, vel="3D", nthreads=
 ## can we remove psi1 and psi2 from the "_smu" functions? 
 ##
 
-def corrPairCount_smu(sample1, sample2, smax, swidth, muwidth, estimator, nthreads=1):
+def corrPairCount_smu(sample1, sample2, smax, swidth, muwidth, estimator, weights1 = None, weights2 = None, nthreads=1):
     """
     Python function wrapping C function 'pairCounter' that computes estimators
     of the 2PCF, v-v auto-corr and g-v cross-corr functions.
@@ -172,8 +183,15 @@ def corrPairCount_smu(sample1, sample2, smax, swidth, muwidth, estimator, nthrea
         # Otherwise set 'equiv' to 1
         equiv = 1
 
+    # Check if weight vectors have been supplied or not, if not set weights to be a vector of ones
+    if weights1 == None:
+        weights1 = np.ones(len_sample1)
+    if weights2 == None:
+        weights2 = np.ones(len_sample2)
+    
     # Prepare inputs to be passed to C
     sample1, sample2 = np.ascontiguousarray(sample1), np.ascontiguousarray(sample2)
+    weights1, weights2 = np.ascontiguousarray(weights1), np.ascontiguousarray(weights2)
     c_estimator = estimator.encode('utf-8')
 
     # Define a class to hold the outputs of the 'lin_corr' struct
@@ -197,6 +215,8 @@ def corrPairCount_smu(sample1, sample2, smax, swidth, muwidth, estimator, nthrea
                                   cts.c_int,
                                   ndpointer(dtype=np.float64, ndim=2, shape=(len_sample1, 4), flags='C_CONTIGUOUS'),
                                   ndpointer(dtype=np.float64, ndim=2, shape=(len_sample2, 4), flags='C_CONTIGUOUS'),
+                                  ndpointer(dtype=np.float64, ndim=1, shape=len_sample1, flags="C_CONTIGUOUS"),
+                                  ndpointer(dtype=np.float64, ndim=1, shape=len_sample2, flags="C_CONTIGUOUS"),
                                   cts.c_int,
                                   cts.c_int,
                                   cts.c_double,
@@ -207,7 +227,7 @@ def corrPairCount_smu(sample1, sample2, smax, swidth, muwidth, estimator, nthrea
 
     # Run the function 'pairCounter'
     result = _corr.pairCounter_smu(len_sample1, len_sample2, equiv, sample1, sample2,
-                               smax, swidth, muwidth, c_estimator, nthreads)
+                               weights1, weights2, smax, swidth, muwidth, c_estimator, nthreads)
     
     # Separately save the elements of the result to numpy arrays
     numerator = np.array(result[0].num[0][:])
