@@ -19,4 +19,4 @@ The module contains functions that are applicable to simulation data -- where th
 I will add detailed examples, but see the notebook 'crosscorr_example.ipynb' for a rudimentary look into the functionality of **crosscorr**
 
 ## Support
-For support, contact Ryan Turner
+For support, contact Ryan Turner (rjturner@swin.edu.au)
