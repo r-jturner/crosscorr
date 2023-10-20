@@ -7,7 +7,7 @@ ODIR=obj
 _DEPS = corr_desi.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ = corr_desi.o corr_desi_smu.o corr_desi_xyz.o corr_desi_xyz_smu.o
+_OBJ = corr_desi.o corr_desi_smu.o corr_desi_xyz.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 

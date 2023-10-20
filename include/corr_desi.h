@@ -48,8 +48,6 @@ struct nonlin_corr calcCorr_xyz_smu(double x1, double y1, double z1, double x2, 
                             double vx1, double vy1, double vz1, double vx2, double vy2, double vz2, double width, double mu_width);
 struct output *pairCounter_xyz(int drows, int rrows, int equiv, const double sample1[drows][6], const double sample2[rrows][6], 
                 const double weights1[drows], const double weights2[rrows], int smax, int swidth, const char* estimator, int nthreads);
-struct output *pairCounter_xyz_smu(int drows, int rrows, int equiv, const double sample1[drows][6], const double sample2[rrows][6], 
-                 int smax, int swidth, double muwidth, const char* estimator, int nthreads);
 int whichParam(const char* input);
 int whichParam_xyz(const char* input);
 void free_structmemory(struct output *ptr);

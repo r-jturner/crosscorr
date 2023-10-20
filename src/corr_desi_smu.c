@@ -4,7 +4,6 @@
 #include <math.h>
 #include <string.h>
 
-/* Is it worth keeping psi_1 and psi_2 in the (s,mu) functions since they don't add anything new */
 struct nonlin_corr calcCorr_smu(double x1, double y1, double z1, double x2, double y2, double z2,
                             double u1, double u2, double width, double mu_width){
 
@@ -48,8 +47,8 @@ struct output *pairCounter_smu(int drows, int rrows, int equiv, const double sam
     int muBins = (int)(2. / muwidth);
     int vecLength = numBins * muBins;
     struct output *results = malloc(sizeof(*results));
-    results->num = malloc( (vecLength) * sizeof(double));//sizeof(*(results->num)));
-    results->den = malloc( (vecLength) * sizeof(double));//sizeof(*(results->den)));
+    results->num = malloc( (vecLength) * sizeof(*(results->num)));
+    results->den = malloc( (vecLength) * sizeof(*(results->den)));
 
     double *num = results->num;
     double *den = results->den;
@@ -65,7 +64,7 @@ struct output *pairCounter_smu(int drows, int rrows, int equiv, const double sam
         printf("Samples are equivalent, calculating auto- pair counts.\n");
         switch (param) {
             case 0:
-                //printf("Calculating psi_1 estimator components.\n");
+                printf("Calculating psi_1 estimator components.\n");
                 #pragma omp parallel for num_threads(nthreads) collapse(2) private(i,j,pair) reduction(+:num[:vecLength]) reduction(+:den[:vecLength])
                 for (i = 0; i < (drows-1); i++) {
                     for (j = (i+1); j < drows; j++) {
@@ -207,6 +206,4 @@ struct output *pairCounter_smu(int drows, int rrows, int equiv, const double sam
         }
     }
     return results;
-    /* We can compile the individual .c files: gcc-13 -fopenmp -fPIC -c foo1.c 
-    and then compile all of them into a shared object as: gcc-13 -fopenmp -shared -o object.so -fPIC foo1.o foo2.o*/
 }

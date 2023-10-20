@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-//#include <omp.h>
 int whichParam(const char* input) {
     const char* validParams[] = {"psi1", "psi2", "psi3", "xiGG"};
     int numParams = sizeof(validParams) / sizeof(validParams[0]);
@@ -70,15 +69,11 @@ struct output *pairCounter(int drows, int rrows, int equiv, const double sample1
     }
     int param = whichParam(estimator);
     if (equiv == 1){ 
-        //if (sample1 == sample2){ <- for some reason the C code won't recognise that dat_sample == dat_sample, so pass a binary
-        //                            value for the time being until it can be figured out (or just leave it as is...)
-
         // if samples are equivalent then we want an auto-correlation pair count (DD or RR)
         printf("Samples are equivalent, calculating auto- pair counts.\n");
         switch (param) {
             case 0:
-                //printf("Calculating psi_1 estimator components.\n");
-                //#pragma omp parallel for num_threads(nthreads) collapse(2) private(i,j,pair) shared(num,den)
+                printf("Calculating psi_1 estimator components.\n");
                 #pragma omp parallel for num_threads(nthreads) collapse(2) private(i,j,pair) reduction(+:num[:numBins]) reduction(+:den[:numBins])
                 for (i = 0; i < (drows-1); i++) {
                     for (j = (i+1); j < drows; j++) {
@@ -219,10 +214,5 @@ struct output *pairCounter(int drows, int rrows, int equiv, const double sample1
                 break;
         }
     }
-    /* 
-    return the output struct, populated correctly with either auto or cross pair counts using the correct estimator
-    compile call - % gcc-13 -fopenmp -shared -o desitest.so -fPIC corr_desi.c
-    */
-    
     return results;
 }
