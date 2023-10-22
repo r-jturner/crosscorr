@@ -7,22 +7,29 @@ _corr = cts.CDLL('src/obj/corrdesi.so')
 
 # Define a corr_smu function, and then the equivalent (x,y,z) functions too
 
-def corrPairCount(sample1, sample2, smax, swidth, estimator, weights1 = None, weights2 = None, vel = "3D", nthreads = 1):
+def corrPairCount(sample1, sample2, smax, swidth, estimator, weights1 = None, weights2 = None, vel = "3D", nthreads = 1, verbose = False):
     """
-    Python function wrapping C function 'pairCounter' that computes estimators
+    Python function wrapping C functions 'pairCounter' and 'pairCounter_xyz' that compute estimators
     of the 2PCF, v-v auto-corr and g-v cross-corr functions.
 
     Parameters
     -----------
-    sample1 : array with shape (N,4),
-            (x,y,z,u) - positions in cartesian coordinates and radial velocity
-    sample2 : see above
-    smax : maximum separation to consider when computing correlation estimates (Mpc/h)
-    swidth : width of separation bins (Mpc/h)
-    estimator : string that determines which estimator to compute,
-                "psi1", "psi2", "psi3" or "xiGG"
-    nthreads : number of threads to use when executing function in parallel,
-               set by default to 1
+    sample1     : array with shape (N,4) or (N,6) (see 'vel'),
+                  (x,y,z,u) - positions in cartesian coordinates and radial velocity
+                  (x,y,z,v_x,v_y,v_z) - positions in cartesian coordinates and 3D components of velocity
+    sample2     : see above
+    smax        : maximum separation to consider when computing correlation estimates (Mpc/h)
+    swidth      : width of separation bins (Mpc/h)
+    estimator   : string that determines which estimator to compute,
+                  "psi1", "psi2", "psi3" or "xiGG"
+    weights1    : 1D array of length N, weights to be applied to objects in sample1
+                  will be set to 1 by default if no argument is supplied
+    weights2    : as above, but to be applied to objects in sample2.
+    vel         : a string, either "u" or "3D" to be set depending on if radial velocities 
+                  or 3D components of velocity are supplied in sample1 and sample2
+    nthreads    : number of threads to use when executing function in parallel,
+                  set by default to 1
+    verbose     : True/False flag that will turn 'progress messages' from pair-counting functions on or off
 
     Outputs
     -----------
@@ -60,6 +67,12 @@ def corrPairCount(sample1, sample2, smax, swidth, estimator, weights1 = None, we
         # Otherwise set 'equiv' to 1
         equiv = 1
 
+    # Pass 1 or 0 to C function depending on 'verbose'
+    if verbose == True:
+        verbose_C = 1
+    else:
+        verbose_C = 0
+
     # Check if weight vectors have been supplied or not, if not set weights to be a vector of ones
     if weights1 == None:
         weights1 = np.ones(len_sample1)
@@ -95,6 +108,7 @@ def corrPairCount(sample1, sample2, smax, swidth, estimator, weights1 = None, we
                                   cts.c_int,
                                   cts.c_int,
                                   cts.c_char_p,
+                                  cts.c_int,
                                   cts.c_int]
     _corr.pairCounter_xyz.argtypes = [cts.c_int, 
                                   cts.c_int, 
@@ -106,6 +120,7 @@ def corrPairCount(sample1, sample2, smax, swidth, estimator, weights1 = None, we
                                   cts.c_int,
                                   cts.c_int,
                                   cts.c_char_p,
+                                  cts.c_int,
                                   cts.c_int]
     # We expect the function 'pairCounter' to return a pointer to a 'pairCounts' type of python class
     _corr.pairCounter.restype = cts.POINTER(pairCounts)
@@ -114,10 +129,10 @@ def corrPairCount(sample1, sample2, smax, swidth, estimator, weights1 = None, we
     # Run the function 'pairCounter'
     if (radial_check == 0):
         result = _corr.pairCounter_xyz(len_sample1, len_sample2, equiv, sample1, sample2,
-                                    weights1, weights2, smax, swidth,  c_estimator, nthreads)
+                                    weights1, weights2, smax, swidth,  c_estimator, nthreads, verbose_C)
     elif (radial_check == 1):
         result = _corr.pairCounter(len_sample1, len_sample2, equiv, sample1, sample2,
-                                    weights1, weights2, smax, swidth, c_estimator, nthreads)
+                                    weights1, weights2, smax, swidth, c_estimator, nthreads, verbose_C)
     
     # Separately save the elements of the result to numpy arrays
     numerator = np.array(result[0].num[0][:])
@@ -137,7 +152,7 @@ def corrPairCount(sample1, sample2, smax, swidth, estimator, weights1 = None, we
 ## can we remove psi1 and psi2 from the "_smu" functions? 
 ##
 
-def corrPairCount_smu(sample1, sample2, smax, swidth, muwidth, estimator, weights1 = None, weights2 = None, nthreads=1):
+def corrPairCount_smu(sample1, sample2, smax, swidth, muwidth, estimator, weights1 = None, weights2 = None, nthreads=1, verbose = False):
     """
     Python function wrapping C function 'pairCounter' that computes estimators
     of the 2PCF, v-v auto-corr and g-v cross-corr functions.
@@ -145,15 +160,19 @@ def corrPairCount_smu(sample1, sample2, smax, swidth, muwidth, estimator, weight
     Parameters
     -----------
     sample1     : array with shape (N,4),
-                (x,y,z,u) - positions in cartesian coordinates and radial velocity
+                  (x,y,z,u) - positions in cartesian coordinates and radial velocity
     sample2     : see above
     smax        : maximum separation to consider when computing correlation estimates (Mpc/h)
     swidth      : width of separation bins (Mpc/h)
     muwidth     : width of cos(theta_mu) bins
     estimator   : string that determines which estimator to compute,
-                "psi1", "psi2", "psi3" or "xiGG"
+                  "psi1", "psi2", "psi3" or "xiGG"
+    weights1    : 1D array of length N, weights to be applied to objects in sample1
+                  will be set to 1 by default if no argument is supplied
+    weights2    : as above, but to be applied to objects in sample2.
     nthreads    : number of threads to use when executing function in parallel,
-                set by default to 1
+                  set by default to 1
+    verbose     : True/False flag that will turn 'progress messages' from pair-counting functions on or off
 
     Outputs
     -----------
@@ -182,6 +201,12 @@ def corrPairCount_smu(sample1, sample2, smax, swidth, muwidth, estimator, weight
     elif ((sample1 == sample2).all()):
         # Otherwise set 'equiv' to 1
         equiv = 1
+
+    # Pass 1 or 0 to C function depending on 'verbose'
+    if verbose == True:
+        verbose_C = 1
+    else:
+        verbose_C = 0
 
     # Check if weight vectors have been supplied or not, if not set weights to be a vector of ones
     if weights1 == None:
@@ -221,13 +246,14 @@ def corrPairCount_smu(sample1, sample2, smax, swidth, muwidth, estimator, weight
                                   cts.c_int,
                                   cts.c_double,
                                   cts.c_char_p,
+                                  cts.c_int,
                                   cts.c_int]
     # We expect the function 'pairCounter' to return a pointer to a 'pairCounts' type of python class
     _corr.pairCounter_smu.restype = cts.POINTER(pairCounts)
 
     # Run the function 'pairCounter'
     result = _corr.pairCounter_smu(len_sample1, len_sample2, equiv, sample1, sample2,
-                               weights1, weights2, smax, swidth, muwidth, c_estimator, nthreads)
+                               weights1, weights2, smax, swidth, muwidth, c_estimator, nthreads, verbose_C)
     
     # Separately save the elements of the result to numpy arrays
     numerator = np.array(result[0].num[0][:])
