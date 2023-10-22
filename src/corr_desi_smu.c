@@ -39,7 +39,8 @@ struct nonlin_corr calcCorr_smu(double x1, double y1, double z1, double x2, doub
 }
 
 struct output *pairCounter_smu(int drows, int rrows, int equiv, const double sample1[drows][4], const double sample2[rrows][4], 
-                 const double weights1[drows], const double weights2[rrows], int smax, int swidth, double muwidth, const char* estimator, int nthreads){
+                 const double weights1[drows], const double weights2[rrows], int smax, int swidth, double muwidth, 
+                 const char* estimator, int nthreads, int verbose){
     long long i,j;
     struct nonlin_corr pair;
     /* allocate the memory for the output structure */
@@ -61,10 +62,10 @@ struct output *pairCounter_smu(int drows, int rrows, int equiv, const double sam
     }
     int param = whichParam(estimator);
     if (equiv == 1){ 
-        printf("Samples are equivalent, calculating auto- pair counts.\n");
+        if (verbose == 1){ printf("Samples are equivalent, calculating auto- pair counts.\n"); }
         switch (param) {
             case 0:
-                printf("Calculating psi_1 estimator components.\n");
+                if (verbose == 1){ printf("Calculating psi_1 estimator components.\n"); }
                 #pragma omp parallel for num_threads(nthreads) collapse(2) private(i,j,pair) reduction(+:num[:vecLength]) reduction(+:den[:vecLength])
                 for (i = 0; i < (drows-1); i++) {
                     for (j = (i+1); j < drows; j++) {
@@ -80,7 +81,7 @@ struct output *pairCounter_smu(int drows, int rrows, int equiv, const double sam
                 }
                 break;
             case 1:
-                printf("Calculating psi_2 estimator components.\n");
+                if (verbose == 1){ printf("Calculating psi_2 estimator components.\n"); }
                 #pragma omp parallel for num_threads(nthreads) collapse(2) private(i,j,pair) reduction(+:num[:vecLength]) reduction(+:den[:vecLength])
                 for (i = 0; i < (drows-1); i++) {
                     for (j = (i+1); j < drows; j++) {
@@ -96,7 +97,7 @@ struct output *pairCounter_smu(int drows, int rrows, int equiv, const double sam
                 }
                 break;
             case 2:
-                printf("Calculating psi_3 estimator components.\n");
+                if (verbose == 1){ printf("Calculating psi_3 estimator components.\n"); }
                 #pragma omp parallel for num_threads(nthreads) collapse(2) private(i,j,pair) reduction(+:num[:vecLength]) reduction(+:den[:vecLength])
                 for (i = 0; i < (drows-1); i++) {
                     for (j = (i+1); j < drows; j++) {
@@ -112,7 +113,7 @@ struct output *pairCounter_smu(int drows, int rrows, int equiv, const double sam
                 }
                 break;
             case 3:
-                printf("Calculating xi_GG estimator components.\n");
+                if (verbose == 1){ printf("Calculating xi_GG estimator components.\n"); }
                 #pragma omp parallel for num_threads(nthreads) collapse(2) private(i,j,pair) reduction(+:num[:vecLength]) reduction(+:den[:vecLength])
                 for (i = 0; i < (drows-1); i++) {
                     for (j = (i+1); j < drows; j++) {
@@ -134,10 +135,10 @@ struct output *pairCounter_smu(int drows, int rrows, int equiv, const double sam
     }
     else {
         // If samples are different then we want a cross-correlation (DR or RD)
-        printf("Samples are not equivalent, calculating cross- pair counts.\n");
+        if (verbose == 1){ printf("Samples are not equivalent, calculating cross- pair counts.\n");}
         switch (param) {
             case 0:
-                printf("Calculating psi_1 estimator components.\n");
+                if (verbose == 1){ printf("Calculating psi_1 estimator components.\n"); }
                 #pragma omp parallel for num_threads(nthreads) collapse(2) private(i,j,pair) reduction(+:num[:vecLength]) reduction(+:den[:vecLength])
                 for (i = 0; i < drows; i++) {
                     for (j = 0; j < rrows; j++) {
@@ -153,7 +154,7 @@ struct output *pairCounter_smu(int drows, int rrows, int equiv, const double sam
                 }
                 break;
             case 1:
-                printf("Calculating psi_2 estimator components.\n");
+                if (verbose == 1){ printf("Calculating psi_2 estimator components.\n"); }
                 #pragma omp parallel for num_threads(nthreads) collapse(2) private(i,j,pair) reduction(+:num[:vecLength]) reduction(+:den[:vecLength])
                 for (i = 0; i < drows; i++) {
                     for (j = 0; j < rrows; j++) {
@@ -169,7 +170,7 @@ struct output *pairCounter_smu(int drows, int rrows, int equiv, const double sam
                 }
                 break;
             case 2:
-                printf("Calculating psi_3 estimator components.\n");
+                if (verbose == 1){ printf("Calculating psi_3 estimator components.\n"); }
                 #pragma omp parallel for num_threads(nthreads) collapse(2) private(i,j,pair) reduction(+:num[:vecLength]) reduction(+:den[:vecLength])
                 for (i = 0; i < drows; i++) {
                     for (j = 0; j < rrows; j++) {
@@ -185,7 +186,7 @@ struct output *pairCounter_smu(int drows, int rrows, int equiv, const double sam
                 }
                 break;
             case 3:
-                printf("Calculating xi_GG estimator components.\n");
+                if (verbose == 1){ printf("Calculating xi_GG estimator components.\n"); }
                 #pragma omp parallel for num_threads(nthreads) collapse(2) private(i,j,pair) reduction(+:num[:vecLength]) reduction(+:den[:vecLength])
                 for (i = 0; i < drows; i++) {
                     for (j = 0; j < rrows; j++) {
