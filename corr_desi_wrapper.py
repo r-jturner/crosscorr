@@ -21,7 +21,7 @@ def corrPairCount(sample1, sample2, smax, swidth, estimator, weights1 = None, we
     smax        : maximum separation to consider when computing correlation estimates (Mpc/h)
     swidth      : width of separation bins (Mpc/h)
     estimator   : string that determines which estimator to compute,
-                  "psi1", "psi2", "psi3" or "xiGG"
+                  "psi1", "psi2", "psi3", "xiGG" or "geom" (to calculate additional geometric quantities)
     weights1    : 1D array of length N, weights to be applied to objects in sample1
                   will be set to 1 by default if no argument is supplied
     weights2    : as above, but to be applied to objects in sample2.
@@ -166,7 +166,7 @@ def corrPairCount_smu(sample1, sample2, smax, swidth, muwidth, estimator, weight
     swidth      : width of separation bins (Mpc/h)
     muwidth     : width of cos(theta_mu) bins
     estimator   : string that determines which estimator to compute,
-                  "psi1", "psi2", "psi3" or "xiGG"
+                  "psi3" or "xiGG"
     weights1    : 1D array of length N, weights to be applied to objects in sample1
                   will be set to 1 by default if no argument is supplied
     weights2    : as above, but to be applied to objects in sample2.

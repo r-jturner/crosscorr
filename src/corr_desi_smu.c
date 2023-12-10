@@ -3,6 +3,21 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+int whichParam_smu(const char* input) {
+    const char* validParams[] = {"psi3", "xiGG"};
+    int numParams = sizeof(validParams) / sizeof(validParams[0]);
+
+    for (int i = 0; i < numParams; ++i) {
+        if (strcmp(input, validParams[i]) == 0) {
+            // Return an index indicating the matching string
+            // no need to perform multipole expansion for psi1 and psi2
+            // psi3 == 0, xiGG == 1
+            return i;
+        }
+    }
+    // Return -1 if no valid string is found
+    return -1;
+}
 
 struct nonlin_corr calcCorr_smu(double x1, double y1, double z1, double x2, double y2, double z2,
                             double u1, double u2, double width, double mu_width){
@@ -60,43 +75,11 @@ struct output *pairCounter_smu(int drows, int rrows, int equiv, const double sam
         printf("Null pointer in output struct - exiting program.\n");
         exit(0);
     }
-    int param = whichParam(estimator);
+    int param = whichParam_smu(estimator);
     if (equiv == 1){ 
         if (verbose == 1){ printf("Samples are equivalent, calculating auto- pair counts.\n"); }
         switch (param) {
             case 0:
-                if (verbose == 1){ printf("Calculating psi_1 estimator components.\n"); }
-                #pragma omp parallel for num_threads(nthreads) collapse(2) private(i,j,pair) reduction(+:num[:vecLength]) reduction(+:den[:vecLength])
-                for (i = 0; i < (drows-1); i++) {
-                    for (j = (i+1); j < drows; j++) {
-                        /* do the pair count */
-                        pair = calcCorr_smu(sample1[i][0], sample1[i][1], sample1[i][2],
-                                            sample2[j][0], sample2[j][1], sample2[j][2],
-                                            sample1[i][3], sample2[j][3], swidth, muwidth);
-                        if (pair.index < numBins && pair.muIndex < muBins && pair.index >= 0 && pair.muIndex >= 0) {
-                            num[pair.index*muBins + pair.muIndex] += (weights1[i] * weights2[j])*pair.cosAB*(pair.uA*pair.uB);
-                            den[pair.index*muBins + pair.muIndex] += (weights1[i] * weights2[j])*pair.cosAB*pair.cosAB;
-                        }
-                    }
-                }
-                break;
-            case 1:
-                if (verbose == 1){ printf("Calculating psi_2 estimator components.\n"); }
-                #pragma omp parallel for num_threads(nthreads) collapse(2) private(i,j,pair) reduction(+:num[:vecLength]) reduction(+:den[:vecLength])
-                for (i = 0; i < (drows-1); i++) {
-                    for (j = (i+1); j < drows; j++) {
-                        /* do the pair count */
-                        pair = calcCorr_smu(sample1[i][0], sample1[i][1], sample1[i][2],
-                                            sample2[j][0], sample2[j][1], sample2[j][2],
-                                            sample1[i][3], sample2[j][3], swidth, muwidth);
-                        if (pair.index < numBins && pair.muIndex < muBins && pair.index >= 0 && pair.muIndex >= 0) {
-                            num[pair.index*muBins + pair.muIndex] += (weights1[i] * weights2[j])*pair.cosA*pair.cosB*(pair.uA*pair.uB);
-                            den[pair.index*muBins + pair.muIndex] += (weights1[i] * weights2[j])*pair.cosA*pair.cosA*pair.cosAB;
-                        }
-                    }
-                }
-                break;
-            case 2:
                 if (verbose == 1){ printf("Calculating psi_3 estimator components.\n"); }
                 #pragma omp parallel for num_threads(nthreads) collapse(2) private(i,j,pair) reduction(+:num[:vecLength]) reduction(+:den[:vecLength])
                 for (i = 0; i < (drows-1); i++) {
@@ -112,7 +95,7 @@ struct output *pairCounter_smu(int drows, int rrows, int equiv, const double sam
                     }
                 }
                 break;
-            case 3:
+            case 1:
                 if (verbose == 1){ printf("Calculating xi_GG estimator components.\n"); }
                 #pragma omp parallel for num_threads(nthreads) collapse(2) private(i,j,pair) reduction(+:num[:vecLength]) reduction(+:den[:vecLength])
                 for (i = 0; i < (drows-1); i++) {
@@ -138,38 +121,6 @@ struct output *pairCounter_smu(int drows, int rrows, int equiv, const double sam
         if (verbose == 1){ printf("Samples are not equivalent, calculating cross- pair counts.\n");}
         switch (param) {
             case 0:
-                if (verbose == 1){ printf("Calculating psi_1 estimator components.\n"); }
-                #pragma omp parallel for num_threads(nthreads) collapse(2) private(i,j,pair) reduction(+:num[:vecLength]) reduction(+:den[:vecLength])
-                for (i = 0; i < drows; i++) {
-                    for (j = 0; j < rrows; j++) {
-                        /* do the pair count */
-                        pair = calcCorr_smu(sample1[i][0], sample1[i][1], sample1[i][2],
-                                            sample2[j][0], sample2[j][1], sample2[j][2],
-                                            sample1[i][3], sample2[j][3], swidth, muwidth);
-                        if (pair.index < numBins && pair.muIndex < muBins && pair.index >= 0 && pair.muIndex >= 0) {
-                            num[pair.index*muBins + pair.muIndex] += (weights1[i] * weights2[j])*pair.cosAB*(pair.uA*pair.uB);
-                            den[pair.index*muBins + pair.muIndex] += (weights1[i] * weights2[j])*pair.cosAB*pair.cosAB;
-                        }
-                    }
-                }
-                break;
-            case 1:
-                if (verbose == 1){ printf("Calculating psi_2 estimator components.\n"); }
-                #pragma omp parallel for num_threads(nthreads) collapse(2) private(i,j,pair) reduction(+:num[:vecLength]) reduction(+:den[:vecLength])
-                for (i = 0; i < drows; i++) {
-                    for (j = 0; j < rrows; j++) {
-                        /* do the pair count */
-                        pair = calcCorr_smu(sample1[i][0], sample1[i][1], sample1[i][2],
-                                            sample2[j][0], sample2[j][1], sample2[j][2],
-                                            sample1[i][3], sample2[j][3], swidth, muwidth);
-                        if (pair.index < numBins && pair.muIndex < muBins && pair.index >= 0 && pair.muIndex >= 0) {
-                            num[pair.index*muBins + pair.muIndex] += (weights1[i] * weights2[j])*pair.cosA*pair.cosB*(pair.uA*pair.uB);
-                            den[pair.index*muBins + pair.muIndex] += (weights1[i] * weights2[j])*pair.cosA*pair.cosB*pair.cosAB;
-                        }
-                    }
-                }
-                break;
-            case 2:
                 if (verbose == 1){ printf("Calculating psi_3 estimator components.\n"); }
                 #pragma omp parallel for num_threads(nthreads) collapse(2) private(i,j,pair) reduction(+:num[:vecLength]) reduction(+:den[:vecLength])
                 for (i = 0; i < drows; i++) {
@@ -185,7 +136,7 @@ struct output *pairCounter_smu(int drows, int rrows, int equiv, const double sam
                     }
                 }
                 break;
-            case 3:
+            case 1:
                 if (verbose == 1){ printf("Calculating xi_GG estimator components.\n"); }
                 #pragma omp parallel for num_threads(nthreads) collapse(2) private(i,j,pair) reduction(+:num[:vecLength]) reduction(+:den[:vecLength])
                 for (i = 0; i < drows; i++) {
