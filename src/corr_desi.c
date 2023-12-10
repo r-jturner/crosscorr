@@ -4,7 +4,7 @@
 #include <math.h>
 #include <string.h>
 int whichParam(const char* input) {
-    const char* validParams[] = {"psi1", "psi2", "psi3", "xiGG"};
+    const char* validParams[] = {"psi1", "psi2", "psi3", "xiGG", "geom"};
     int numParams = sizeof(validParams) / sizeof(validParams[0]);
 
     for (int i = 0; i < numParams; ++i) {
@@ -137,8 +137,24 @@ struct output *pairCounter(int drows, int rrows, int equiv, const double sample1
                     }
                 }
                 break;
+            case 4:
+                if (verbose == 1){ printf("Calculating additional survey geometry components.\n"); }
+                #pragma omp parallel for num_threads(nthreads) collapse(2) private(i,j,pair) reduction(+:num[:numBins]) reduction(+:den[:numBins])
+                for (i = 0; i < (drows-1); i++) {
+                    for (j = (i+1); j < drows; j++) {
+                        /* do the pair count */
+                        pair = calcCorr(sample1[i][0], sample1[i][1], sample1[i][2],
+                                        sample2[j][0], sample2[j][1], sample2[j][2],
+                                        sample1[i][3], sample2[j][3], swidth);
+                        if (pair.index < numBins && pair.index >= 0) {
+                            num[pair.index] += (weights1[i] * weights2[j])*(pair.cosA*pair.cosA)*(pair.cosB*pair.cosB);
+                            den[pair.index] += 0.0;
+                        }
+                    }
+                }
+                break;
             default:
-                printf("Error occured: expected estimator = 'psi1', 'psi2', 'psi3' or 'xiGG' as an input.\n");
+                printf("Error occured: expected estimator = 'psi1', 'psi2', 'psi3', 'xiGG' or 'geom' as an input.\n");
                 break;
         }
     }
@@ -210,8 +226,24 @@ struct output *pairCounter(int drows, int rrows, int equiv, const double sample1
                     }
                 }
                 break;
+            case 4:
+                if (verbose == 1){ printf("Calculating additional survey geometry components.\n"); }
+                #pragma omp parallel for num_threads(nthreads) collapse(2) private(i,j,pair) reduction(+:num[:numBins]) reduction(+:den[:numBins])
+                for (i = 0; i < drows; i++) {
+                    for (j = 0; j < rrows; j++) {
+                        /* do the pair count */
+                        pair = calcCorr(sample1[i][0], sample1[i][1], sample1[i][2],
+                                        sample2[j][0], sample2[j][1], sample2[j][2],
+                                        sample1[i][3], sample2[j][3], swidth);
+                        if (pair.index < numBins && pair.index >= 0) {
+                            num[pair.index] += (weights1[i] * weights2[j])*(pair.cosA*pair.cosA)*(pair.cosB*pair.cosB);
+                            den[pair.index] += 0.0;
+                        }
+                    }
+                }
+                break;
             default:
-                printf("Error occured: expected estimator = 'psi1', 'psi2', 'psi3' or 'xiGG' as an input.\n");
+                printf("Error occured: expected estimator = 'psi1', 'psi2', 'psi3', 'xiGG' or 'geom' as an input.\n");
                 break;
         }
     }
