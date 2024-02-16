@@ -49,7 +49,7 @@ def corrPairCount(sample1, sample2, smax, swidth, estimator, weights1 = None, we
     radial_check = 0
     if (vel == "3D"): 
         ncol = 6
-        radial_check = 0
+        radial_check = 0 # also save a flag to check if we need to run the 3D or radial pair counter
     elif (vel == "u"): 
         ncol = 4
         radial_check = 1
@@ -60,11 +60,11 @@ def corrPairCount(sample1, sample2, smax, swidth, estimator, weights1 = None, we
     len_sample2 = sample2.shape[0]
 
     # If samples are not equivalent, set parameter 'equiv' to 0
+    # otherwise set 'equiv' to 1
     equiv = 0
     if (len_sample1 != len_sample2):
         equiv = 0
     elif ((sample1 == sample2).all()):
-        # Otherwise set 'equiv' to 1
         equiv = 1
 
     # Pass 1 or 0 to C function depending on 'verbose'
@@ -147,15 +147,10 @@ def corrPairCount(sample1, sample2, smax, swidth, estimator, weights1 = None, we
     # Finally, return our desired outputs
     return numerator, denominator
 
-
-##
-## can we remove psi1 and psi2 from the "_smu" functions? 
-##
-
 def corrPairCount_smu(sample1, sample2, smax, swidth, muwidth, estimator, weights1 = None, weights2 = None, nthreads=1, verbose = False):
     """
-    Python function wrapping C function 'pairCounter' that computes estimators
-    of the 2PCF, v-v auto-corr and g-v cross-corr functions.
+    Python function wrapping C function 'pairCounter_smu' that computes multipoles
+    of 2PCF and g-v cross-correlation function estimators
 
     Parameters
     -----------
@@ -180,11 +175,6 @@ def corrPairCount_smu(sample1, sample2, smax, swidth, muwidth, estimator, weight
                 each bin contains the summed total of the numerator of the specified estimator for every
                 pair of galaxies that fall in that separation bin
     denominator : as above, but instead contains the summed total of the denominator for the estimator
-
-    In the case 'estimator = "xiGG"' the denominator is always 0 as this is essentially a pair counting algorithm 
-    with no pairwise weighting needed, and so the numerator captures all required information.
-    For more information on the numerator and denominator of these estimators, see Turner et al. (2021)
-    or Turner et al. (2023).
     """
     
     # Check that the catalogs provided have the correct shape, throw error if not
@@ -370,7 +360,7 @@ def multipole_xigg(data, ell, del_mu, sBins):
     halflen = int(datlen/2)
     sumdata = np.zeros((sBins,halflen))
     i = 0
-    while i < range.size/2: 
+    while i < sum_range.size/2: 
         sumdata[:,(halflen - (i+1))] = multipole_data[:,i] + multipole_data[:,(datlen - (i+1))]
         i += 1
     return np.sum(sumdata, axis=1)
