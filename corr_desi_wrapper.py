@@ -21,7 +21,8 @@ def corrPairCount(sample1, sample2, smax, swidth, estimator, weights1 = None, we
     smax        : maximum separation to consider when computing correlation estimates (Mpc/h)
     swidth      : width of separation bins (Mpc/h)
     estimator   : string that determines which estimator to compute,
-                  "psi1", "psi2", "psi3", "xiGG" or "geom" (to calculate additional geometric quantities)
+                  "psi1", "psi2", "psi3", "xiGG" or "geom" (to calculate additional geometric quantities) -- if vel = "u"
+                  "psi1", "psi2", "psi3", "xiGG" or "3D" (to compute 3D correlations \xi_gv and \xi_vv) -- if vel = "3D"
     weights1    : 1D array of length N, weights to be applied to objects in sample1
                   will be set to 1 by default if no argument is supplied
     weights2    : as above, but to be applied to objects in sample2.
@@ -42,6 +43,13 @@ def corrPairCount(sample1, sample2, smax, swidth, estimator, weights1 = None, we
     with no pairwise weighting needed, and so the numerator captures all required information.
     For more information on the numerator and denominator of these estimators, see Turner et al. (2021)
     or Turner et al. (2023).
+    
+    If 'estimator = "geom" then the elements of the denominator are 0, and the numerator vector is used to store
+    additional information needed to calculate the A(r) and B(r) survey geometry functions needed for the models
+    of \psi_1 and \psi_2
+    
+    If estimator = "3D" the numerator and denominator are used to store the estimators of the 3D correlation functions
+    \xi_vv and \xi_gv, respectively.
     """
     
     # Check that the catalogs provided have the correct shape, throw error if not
@@ -97,7 +105,9 @@ def corrPairCount(sample1, sample2, smax, swidth, estimator, weights1 = None, we
         _fields_ = [('num',cts.POINTER(cts.c_double * (numBins))),
                     ('den',cts.POINTER(cts.c_double * (numBins)))]
         
-    # Define the ctypes inputs and outputs for the C function 'pairCounter'
+    # Define the ctypes inputs and outputs for the C function 'pairCounter' and 'pairCounter_xyz'
+    # pairCounter is to be used when data has radial velocity information ('u')
+    # pairCounter_xyz is to be used when data has 3D velocity information ('v_x, v_y, v_z')
     _corr.pairCounter.argtypes = [cts.c_int, 
                                   cts.c_int, 
                                   cts.c_int,
@@ -171,9 +181,9 @@ def corrPairCount_smu(sample1, sample2, smax, swidth, muwidth, estimator, weight
 
     Outputs
     -----------
-    numerator : 1D array with length N = (int)(smax / swidth),
-                each bin contains the summed total of the numerator of the specified estimator for every
-                pair of galaxies that fall in that separation bin
+    numerator   : 1D array with length N = (int)(smax / swidth * 2.0 / muwidth),
+                  each bin contains the summed total of the numerator of the specified estimator for every
+                  pair of galaxies that fall in that (s, mu) bin
     denominator : as above, but instead contains the summed total of the denominator for the estimator
     """
     
@@ -218,7 +228,7 @@ def corrPairCount_smu(sample1, sample2, smax, swidth, muwidth, estimator, weight
     # we want to consider - use numBins to determine the length of these vectors
     numBins = (np.ceil(smax/swidth)).astype(int)
     muBins = int(2.0/muwidth)
-    print("s bins = ", numBins, "and mu bins = ", muBins)
+
     global pairCounts
     class pairCounts(cts.Structure):
         _fields_ = [('num',cts.POINTER(cts.c_double * (numBins * muBins))),
@@ -262,24 +272,24 @@ def corrPairCount_smu(sample1, sample2, smax, swidth, muwidth, estimator, weight
 def peebles(nD,nR,DD,RR):
     norm_sq = (nR**2) / (nD**2)
     output = np.where(RR != 0, norm_sq*(DD/RR) - 1, 0.0)
-    return output #norm_sq*(DD/RR) - 1
+    return output
 
 def landy_szalay(nD,nR,DD,DR,RR):
     norm_sq = (nR**2) / (nD**2)
     norm = nR / nD
     output = np.where(RR != 0, norm_sq*(DD/RR) - norm*(DR/RR) + 1, 0.0)
-    return output #norm_sq*(DD/RR) - norm*(DR/RR) + 1
+    return output
 
 def turner(nD,nR,DD,DR,RD,RRn,RRd):
     norm_sq = (nR**2) / (nD**2)
     norm = nR / nD
     output = np.where(RRd != 0, norm_sq*(DD/RRd) - norm*(DR/RRd) - norm*(RD/RRd) + RRn/RRd, 0.0)
-    return output #norm_sq*(DD/RRd) - norm*(DR/RRd) - norm*(RD/RRd) + RRn/RRd
+    return output
 
 def vel_short(nD,nR,DD,RR):
     norm_sq = (nR**2) / (nD**2)
     output = np.where(RR != 0, norm_sq*(DD/RR), 0.0)
-    return output #norm_sq*(DD/RR)
+    return output
 
 def vel_long(nD,nR,DD,DR,RRn,RRd):
     norm_sq = (nR**2) / (nD**2)
@@ -318,27 +328,25 @@ def calc_xiGG(nD,nR,DD,DR,RR,estimator = "landy_szalay"):
         return "psi3 estimator must be either 'peebles' or 'landy_szalay'" 
     
 # Multipole calculation for \xi_gu and \xi_gg
-# xi_gg should be pretty much identical to this, but without the (1/2) factor in the actual calculation
-# and a 'folding over' of the matrix/array to account for the fact that the integral actually starts at 0, not -1
 def multipole_psi3(data, ell, del_mu, sBins):
     # I'm choosing the bounds of arange to be the midpoints of the bins
     range_start = -1.0 + del_mu/2.
     range_end = -1.*range_start
-    # sum_range should haave length equal to the number of bins used for cos(theta_mu)
+    # sum_range should have length equal to the number of bins used for cos(theta_mu)
     muBins = int(2.0/del_mu)
     sum_range = np.linspace(range_start, range_end, muBins)
     # reshape the data now into a 2D (s,mu) matrix
     data = (data * del_mu * ((ell*2.+1.)/2.)).reshape((sBins,muBins),order="C")
-    # data = data.reshape((sBins, muBins))
     if(int(ell) == 1):
         l1_range = sum_range
         multipole_data = data * l1_range
     elif(int(ell) == 3):
         l3_range = 0.5*(5.*sum_range**3. - 3.*sum_range)
         multipole_data = data * l3_range
-    else: raise Exception("Please ask for a non-zero multipole of the cross-correlation ( dipole (1) or octupole (3) )!")
+    else: raise Exception("Please ask for a multipole of the cross-correlation that has non-zero signal ( dipole (1) or octupole (3) )!")
     return np.nansum(multipole_data,axis=1)
 
+# \xi_gg requires a 'folding over' of the matrix/array to account for the fact that the integral actually starts at 0, not -1
 def multipole_xigg(data, ell, del_mu, sBins):
     muBins = int(2.0/del_mu)
     if(muBins % 2 != 0):
@@ -346,7 +354,7 @@ def multipole_xigg(data, ell, del_mu, sBins):
     range_start = -1.0 + del_mu/2.0
     range_end = 1.0 - del_mu/2.0
     sum_range = np.linspace(range_start, range_end, muBins)
-    data = (data * del_mu * ((ell*2.0+1.0))).reshape((sBins,muBins),order="C")
+    data = (data * del_mu * ((ell*2.0+1.0)/2.)).reshape((sBins,muBins),order="C") 
     if(int(ell) == 0):
         multipole_data = data
     elif(int(ell) == 2):
@@ -355,7 +363,7 @@ def multipole_xigg(data, ell, del_mu, sBins):
     elif(int(ell) == 4):
         l4_range = 0.125*(35.*sum_range**4. - 30.*sum_range**2. + 3.0)
         multipole_data = data * l4_range
-    else: raise Exception("Please ask for a non-zero multipole of the 2PCF ( monopole (0), quadrupole (2) or hexadecapole (4) )!")
+    else: raise Exception("Please ask for a multipole of the 2PCF that has non-zero signal ( monopole (0), quadrupole (2) or hexadecapole (4) )!")
     datlen = data.shape[1]
     halflen = int(datlen/2)
     sumdata = np.zeros((sBins,halflen))

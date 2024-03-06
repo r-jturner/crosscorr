@@ -45,11 +45,11 @@ struct nonlin_corr calcCorr_smu(double x1, double y1, double z1, double x2, doub
         result.cosA = rahat_x*(delta_x/norm)+rahat_y*(delta_y/norm)+rahat_z*(delta_z/norm);
         result.cosB = rbhat_x*(delta_x/norm)+rbhat_y*(delta_y/norm)+rbhat_z*(delta_z/norm);     
         result.cosAB = rahat_x*rbhat_x+rahat_y*rbhat_y+rahat_z*rbhat_z;
-        result.cosMu = rmuhat_x*(delta_x/norm_mu)+rmuhat_y*(delta_y/norm_mu)+rmuhat_z*(delta_z/norm_mu);
+        result.cosMu = rmuhat_x*(delta_x/norm)+rmuhat_y*(delta_y/norm)+rmuhat_z*(delta_z/norm);
         result.uA = u1;
         result.uB = u2;
         result.index = (int)(norm/width);
-        result.muIndex = (int)(result.cosMu+1.0 / mu_width);
+        result.muIndex = (int)((result.cosMu+1.0) / mu_width);
         return result; 
 }
 
@@ -112,7 +112,7 @@ struct output *pairCounter_smu(int drows, int rrows, int equiv, const double sam
                 }
                 break;
             default:
-                printf("Error occured: expected estimator = 'psi1', 'psi2', 'psi3' or 'xiGG' as an input.\n");
+                printf("Error occured: expected estimator = 'psi3' or 'xiGG' as an input.\n");
                 break;
         }
     }
@@ -153,7 +153,7 @@ struct output *pairCounter_smu(int drows, int rrows, int equiv, const double sam
                 }
                 break;
             default:
-                printf("Error occured: expected estimator = 'psi1', 'psi2', 'psi3' or 'xiGG' as an input.\n");
+                printf("Error occured: expected estimator = 'psi3' or 'xiGG' as an input.\n");
                 break;
         }
     }
