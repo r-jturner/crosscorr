@@ -7,7 +7,7 @@ _corr = cts.CDLL('src/obj/corrdesi.so')
 
 # Define a corr_smu function, and then the equivalent (x,y,z) functions too
 
-def corrPairCount(sample1, sample2, smax, swidth, estimator, weights1 = None, weights2 = None, vel = "3D", nthreads = 1, verbose = False):
+def corrPairCount(estimator, smax, swidth, data = None, random = None, weights1 = None, weights2 = None, vel = "3D", nthreads = 1, verbose = False):
     """
     Python function wrapping C functions 'pairCounter' and 'pairCounter_xyz' that compute estimators
     of the 2PCF, v-v auto-corr and g-v cross-corr functions.
@@ -22,7 +22,7 @@ def corrPairCount(sample1, sample2, smax, swidth, estimator, weights1 = None, we
     swidth      : width of separation bins (Mpc/h)
     estimator   : string that determines which estimator to compute,
                   "psi1", "psi2", "psi3", "xiGG" or "geom" (to calculate additional geometric quantities) -- if vel = "u"
-                  "psi1", "psi2", "psi3", "xiGG" or "3D" (to compute 3D correlations \xi_gv and \xi_vv) -- if vel = "3D"
+                  "psi1", "psi2", "psi3", "xiGG" or "3D" (to compute 3D correlations \\xi_gv and \\xi_vv) -- if vel = "3D"
     weights1    : 1D array of length N, weights to be applied to objects in sample1
                   will be set to 1 by default if no argument is supplied
     weights2    : as above, but to be applied to objects in sample2.
@@ -46,34 +46,49 @@ def corrPairCount(sample1, sample2, smax, swidth, estimator, weights1 = None, we
     
     If 'estimator = "geom" then the elements of the denominator are 0, and the numerator vector is used to store
     additional information needed to calculate the A(r) and B(r) survey geometry functions needed for the models
-    of \psi_1 and \psi_2
+    of \\psi_1 and \\psi_2
     
     If estimator = "3D" the numerator and denominator are used to store the estimators of the 3D correlation functions
-    \xi_vv and \xi_gv, respectively.
+    \\xi_vv and \\xi_gv, respectively.
     """
-    
-    # Check that the catalogs provided have the correct shape, throw error if not
-    # Also store the total number of objects in each catalog to pass to C function
     radial_check = 0
     if (vel == "3D"): 
         ncol = 6
         radial_check = 0 # also save a flag to check if we need to run the 3D or radial pair counter
+        if (random is not None):
+            random = np.column_stack( (random, np.zeros((random.shape[0], 3))) )
     elif (vel == "u"): 
         ncol = 4
         radial_check = 1
+        if (random is not None):
+            random = np.column_stack( (random, np.zeros(random.shape[0])) )
     else: raise Exception("'vel' argument must take either '3D' or 'u' as value, to indicate if the velocity information is three-dimensional or radial.")
+    
+    # Check which catalogues have been supplied, and define samples and set equiv flag accordingly
+    # If samples are not the same (neither data nor random is None), set equiv to 0
+    # otherise (data or random is None, i.e. no catalogue given) set equiv to 1
+    equiv = 0
+    if (data is None):
+        sample1 = random
+        sample2 = random
+        equiv = 1
+    elif (random is None):
+        sample1 = data
+        sample2 = data
+        equiv = 1
+    elif (data is None) & (random is None):
+        raise Exception("Please provide at least one catalog to the function.")
+    else:
+        sample1 = data
+        sample2 = random
+        equiv = 0
+        
+    # Check that the catalogs provided have the correct shape, throw error if not
+    # Also store the total number of objects in each catalog to pass to C function
     if (sample1.shape[1] != ncol or sample2.shape[1] != ncol):
         raise Exception("Please check that the number of columns is correct - if xyz == True, you must provide (vx, vy, vz) velocity info. as well as (x,y,z) positions.")
     len_sample1 = sample1.shape[0]
     len_sample2 = sample2.shape[0]
-
-    # If samples are not equivalent, set parameter 'equiv' to 0
-    # otherwise set 'equiv' to 1
-    equiv = 0
-    if (len_sample1 != len_sample2):
-        equiv = 0
-    elif ((sample1 == sample2).all()):
-        equiv = 1
 
     # Pass 1 or 0 to C function depending on 'verbose'
     if verbose == True:
@@ -157,7 +172,7 @@ def corrPairCount(sample1, sample2, smax, swidth, estimator, weights1 = None, we
     # Finally, return our desired outputs
     return numerator, denominator
 
-def corrPairCount_smu(sample1, sample2, smax, swidth, muwidth, estimator, weights1 = None, weights2 = None, nthreads=1, verbose = False):
+def corrPairCount_smu(estimator, smax, swidth, muwidth, data = None, random = None, weights1 = None, weights2 = None, nthreads=1, verbose = False):
     """
     Python function wrapping C function 'pairCounter_smu' that computes multipoles
     of 2PCF and g-v cross-correlation function estimators
@@ -186,21 +201,34 @@ def corrPairCount_smu(sample1, sample2, smax, swidth, muwidth, estimator, weight
                   pair of galaxies that fall in that (s, mu) bin
     denominator : as above, but instead contains the summed total of the denominator for the estimator
     """
-    
+    if (random != None):
+            random = np.column_stack( (random, np.zeros(random.shape[0])) )
+                
+    # Check which catalogues have been supplied, and define samples and set equiv flag accordingly
+    # If samples are not the same (neither data nor random is None), set equiv to 0
+    # otherise (data or random is None, i.e. no catalogue given) set equiv to 1
+    equiv = 0
+    if (data is None):
+        sample1 = random
+        sample2 = random
+        equiv = 1
+    elif (random is None):
+        sample1 = data
+        sample2 = data
+        equiv = 1
+    elif (data is None) & (random is None):
+        raise Exception("Please provide at least one catalog to the function.")
+    else:
+        sample1 = data
+        sample2 = random
+        equiv = 0
+        
     # Check that the catalogs provided have the correct shape, throw error if not
     # Also store the total number of objects in each catalog to pass to C function
     if (sample1.shape[1] != 4 or sample2.shape[1] != 4):
         raise Exception("Both datasets should have 4 columns - x,y,z positions and a radial velocity.")
     len_sample1 = sample1.shape[0]
     len_sample2 = sample2.shape[0]
-
-    # If samples are not equivalent, set parameter 'equiv' to 0
-    equiv = 0
-    if (len_sample1 != len_sample2):
-        equiv = 0
-    elif ((sample1 == sample2).all()):
-        # Otherwise set 'equiv' to 1
-        equiv = 1
 
     # Pass 1 or 0 to C function depending on 'verbose'
     if verbose == True:
@@ -271,48 +299,37 @@ def corrPairCount_smu(sample1, sample2, smax, swidth, muwidth, estimator, weight
 # Pair-counting functions (Peebles and Davis; Landy & Szalay; Turner, Blake, and Ruggeri)
 def peebles(nD,nR,DD,RR):
     norm_sq = (nR**2) / (nD**2)
-    output = np.where(RR != 0, norm_sq*(DD/RR) - 1, 0.0)
-    return output
+    output = norm_sq*(DD/RR) - 1
+    return np.nan_to_num(output)
 
 def landy_szalay(nD,nR,DD,DR,RR):
     norm_sq = (nR**2) / (nD**2)
     norm = nR / nD
-    output = np.where(RR != 0, norm_sq*(DD/RR) - norm*(DR/RR) + 1, 0.0)
-    return output
+    output = norm_sq*(DD/RR) - norm*(DR/RR) + 1
+    return np.nan_to_num(output)
 
-def turner(nD,nR,DD,DR,RD,RRn,RRd):
+def turner(nD,nR,DD,RD,RRd):
     norm_sq = (nR**2) / (nD**2)
     norm = nR / nD
-    output = np.where(RRd != 0, norm_sq*(DD/RRd) - norm*(DR/RRd) - norm*(RD/RRd) + RRn/RRd, 0.0)
-    return output
+    output = norm_sq*(DD/RRd) - norm*(RD/RRd)
+    return np.nan_to_num(output)
 
 def vel_short(nD,nR,DD,RR):
     norm_sq = (nR**2) / (nD**2)
-    output = np.where(RR != 0, norm_sq*(DD/RR), 0.0)
-    return output
-
-def vel_long(nD,nR,DD,DR,RRn,RRd):
-    norm_sq = (nR**2) / (nD**2)
-    norm = nR / nD
-    return norm_sq*(DD/RRd) - norm*(DR/RRd) - RRn/RRd
+    output = norm_sq*(DD/RR)
+    return np.nan_to_num(output)
 
 # Estimators of the correlation functions
-def calc_psi12(nD,nR,DD,DR,RRn,RRd,estimator = "long"):
-    if (estimator == "long"):
-        psi12 = vel_long(nD,nR,DD,DR,RRn,RRd)
-        return psi12
-    elif (estimator  == "short"):
-        psi12 = vel_short(nD,nR,DD,RRd)
-        return psi12
-    else:
-        return "psi1 and psi2 estimators must be either 'long' or 'short'"
+def calc_psi12(nD,nR,DD,RRd):
+    psi12 = vel_short(nD,nR,DD,RRd)
+    return psi12
 
-def calc_psi3(nD,nR,DD,DR,RD,RRn,RRd,estimator = "turner"):
+def calc_psi3(nD,nR,DD,DR,RRd,estimator = "turner"):
     if (estimator == "short"):
         psi3 = vel_short(nD,nR,DD,RRd)
         return psi3
     elif (estimator  == "turner"):
-        psi3 = turner(nD,nR,DD,DR,RD,RRn,RRd)
+        psi3 = turner(nD,nR,DD,DR,RRd)
         return psi3
     else:
         return "psi3 estimator must be either 'short' or 'turner'"
@@ -329,14 +346,16 @@ def calc_xiGG(nD,nR,DD,DR,RR,estimator = "landy_szalay"):
     
 # Multipole calculation for \xi_gu and \xi_gg
 def multipole_psi3(data, ell, del_mu, sBins):
-    # I'm choosing the bounds of arange to be the midpoints of the bins
-    range_start = -1.0 + del_mu/2.
-    range_end = -1.*range_start
     # sum_range should have length equal to the number of bins used for cos(theta_mu)
     muBins = int(2.0/del_mu)
+    if(muBins % 2 != 0):
+        raise Exception("Number of mu bins for gg multipoles should be even (del_mu = 0.05, 0.1, 0.2, etc...).")
+    # I'm choosing the bounds of arange to be the midpoints of the bins
+    range_start = -1.0 + del_mu/2.0
+    range_end = 1.0 - del_mu/2.0
     sum_range = np.linspace(range_start, range_end, muBins)
     # reshape the data now into a 2D (s,mu) matrix
-    data = (data * del_mu * ((ell*2.+1.)/2.)).reshape((sBins,muBins),order="C")
+    data = (data * del_mu * ((ell*2.0+1.0)/2.0)).reshape((sBins,muBins),order="C")
     if(int(ell) == 1):
         l1_range = sum_range
         multipole_data = data * l1_range
@@ -344,7 +363,7 @@ def multipole_psi3(data, ell, del_mu, sBins):
         l3_range = 0.5*(5.*sum_range**3. - 3.*sum_range)
         multipole_data = data * l3_range
     else: raise Exception("Please ask for a multipole of the cross-correlation that has non-zero signal ( dipole (1) or octupole (3) )!")
-    return np.nansum(multipole_data,axis=1)
+    return np.sum(multipole_data,axis=1)
 
 # \xi_gg requires a 'folding over' of the matrix/array to account for the fact that the integral actually starts at 0, not -1
 def multipole_xigg(data, ell, del_mu, sBins):
@@ -354,7 +373,7 @@ def multipole_xigg(data, ell, del_mu, sBins):
     range_start = -1.0 + del_mu/2.0
     range_end = 1.0 - del_mu/2.0
     sum_range = np.linspace(range_start, range_end, muBins)
-    data = (data * del_mu * ((ell*2.0+1.0)/2.)).reshape((sBins,muBins),order="C") 
+    data = (data * del_mu * ((ell*2.0+1.0)/2.0)).reshape((sBins,muBins),order="C") 
     if(int(ell) == 0):
         multipole_data = data
     elif(int(ell) == 2):
