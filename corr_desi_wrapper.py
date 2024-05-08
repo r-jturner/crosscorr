@@ -14,15 +14,15 @@ def corrPairCount(estimator, smax, swidth, data = None, random = None, weights1 
 
     Parameters
     -----------
-    sample1     : array with shape (N,4) or (N,6) (see 'vel'),
-                  (x,y,z,u) - positions in cartesian coordinates and radial velocity
-                  (x,y,z,v_x,v_y,v_z) - positions in cartesian coordinates and 3D components of velocity
-    sample2     : see above
-    smax        : maximum separation to consider when computing correlation estimates (Mpc/h)
-    swidth      : width of separation bins (Mpc/h)
     estimator   : string that determines which estimator to compute,
                   "psi1", "psi2", "psi3", "xiGG" or "geom" (to calculate additional geometric quantities) -- if vel = "u"
                   "psi1", "psi2", "psi3", "xiGG" or "3D" (to compute 3D correlations \\xi_gv and \\xi_vv) -- if vel = "3D"
+    smax        : maximum separation to consider when computing correlation estimates (Mpc/h)
+    swidth      : width of separation bins (Mpc/h)
+    data        : array with shape (N,4) or (N,6) (see 'vel'),
+                  (x,y,z,u) - positions in cartesian coordinates and radial velocity
+                  (x,y,z,v_x,v_y,v_z) - positions in cartesian coordinates and 3D components of velocity
+    random      : array with shape (N,3), containing positions in cartesian coordinates (x,y,z)
     weights1    : 1D array of length N, weights to be applied to objects in sample1
                   will be set to 1 by default if no argument is supplied
     weights2    : as above, but to be applied to objects in sample2.
@@ -179,14 +179,14 @@ def corrPairCount_smu(estimator, smax, swidth, muwidth, data = None, random = No
 
     Parameters
     -----------
-    sample1     : array with shape (N,4),
-                  (x,y,z,u) - positions in cartesian coordinates and radial velocity
-    sample2     : see above
+    estimator   : string that determines which estimator to compute,
+                  "psi3" or "xiGG"
     smax        : maximum separation to consider when computing correlation estimates (Mpc/h)
     swidth      : width of separation bins (Mpc/h)
     muwidth     : width of cos(theta_mu) bins
-    estimator   : string that determines which estimator to compute,
-                  "psi3" or "xiGG"
+    data        : array with shape (N,4)
+                  (x,y,z,u) - positions in cartesian coordinates and radial velocity
+    random      : array with shape (N,3), containing positions in cartesian coordinates (x,y,z)
     weights1    : 1D array of length N, weights to be applied to objects in sample1
                   will be set to 1 by default if no argument is supplied
     weights2    : as above, but to be applied to objects in sample2.
@@ -320,21 +320,21 @@ def vel_short(nD,nR,DD,RR):
     return np.nan_to_num(output)
 
 # Estimators of the correlation functions
-def calc_psi12(nD,nR,DD,RRd):
-    psi12 = vel_short(nD,nR,DD,RRd)
+def calc_psi12(nD,nR,DD,RR):
+    psi12 = vel_short(nD,nR,DD,RR)
     return psi12
 
-def calc_psi3(nD,nR,DD,DR,RRd,estimator = "turner"):
+def calc_psi3(nD,nR,DD,RR,RD = None,estimator = "turner"):
     if (estimator == "short"):
-        psi3 = vel_short(nD,nR,DD,RRd)
+        psi3 = vel_short(nD,nR,DD,RR)
         return psi3
     elif (estimator  == "turner"):
-        psi3 = turner(nD,nR,DD,DR,RRd)
+        psi3 = turner(nD,nR,DD,RD,RR)
         return psi3
     else:
         return "psi3 estimator must be either 'short' or 'turner'"
 
-def calc_xiGG(nD,nR,DD,DR,RR,estimator = "landy_szalay"):
+def calc_xiGG(nD,nR,DD,RR,DR = None,estimator = "landy_szalay"):
     if (estimator == "peebles"):
         xiGG = peebles(nD,nR,DD,RR)
         return xiGG
