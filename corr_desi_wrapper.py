@@ -7,7 +7,7 @@ _corr = cts.CDLL('src/obj/corrdesi.so')
 
 # Define a corr_smu function, and then the equivalent (x,y,z) functions too
 
-def corrPairCount(estimator, smax, swidth, data = None, random = None, weights1 = None, weights2 = None, vel = "3D", nthreads = 1, verbose = False):
+def corrPairCount(estimator, smax, swidth, data = None, random = None, DR = True, weights1 = None, weights2 = None, vel = "3D", nthreads = 1, verbose = False):
     """
     Python function wrapping C functions 'pairCounter' and 'pairCounter_xyz' that compute estimators
     of the 2PCF, v-v auto-corr and g-v cross-corr functions.
@@ -23,6 +23,9 @@ def corrPairCount(estimator, smax, swidth, data = None, random = None, weights1 
                   (x,y,z,u) - positions in cartesian coordinates and radial velocity
                   (x,y,z,v_x,v_y,v_z) - positions in cartesian coordinates and 3D components of velocity
     random      : array with shape (N,3), containing positions in cartesian coordinates (x,y,z)
+    DR          : True/False flag that determines if the estimator is a cross-correlation between
+                  random positions/velocities and data velocities/positions or vice versa
+                  (only relevant for landy-szalay (D pos - R pos) and turner (R pos - D vel))
     weights1    : 1D array of length N, weights to be applied to objects in sample1
                   will be set to 1 by default if no argument is supplied
     weights2    : as above, but to be applied to objects in sample2.
@@ -78,9 +81,13 @@ def corrPairCount(estimator, smax, swidth, data = None, random = None, weights1 
         equiv = 1
     elif (data is None) & (random is None):
         raise Exception("Please provide at least one catalog to the function.")
-    else:
+    elif (DR is True):
         sample1 = data
         sample2 = random
+        equiv = 0
+    else:
+        sample1 = random
+        sample2 = data
         equiv = 0
         
     # Check that the catalogs provided have the correct shape, throw error if not
@@ -172,7 +179,7 @@ def corrPairCount(estimator, smax, swidth, data = None, random = None, weights1 
     # Finally, return our desired outputs
     return numerator, denominator
 
-def corrPairCount_smu(estimator, smax, swidth, muwidth, data = None, random = None, weights1 = None, weights2 = None, nthreads=1, verbose = False):
+def corrPairCount_smu(estimator, smax, swidth, muwidth, data = None, random = None, DR = True, weights1 = None, weights2 = None, nthreads=1, verbose = False):
     """
     Python function wrapping C function 'pairCounter_smu' that computes multipoles
     of 2PCF and g-v cross-correlation function estimators
@@ -187,6 +194,9 @@ def corrPairCount_smu(estimator, smax, swidth, muwidth, data = None, random = No
     data        : array with shape (N,4)
                   (x,y,z,u) - positions in cartesian coordinates and radial velocity
     random      : array with shape (N,3), containing positions in cartesian coordinates (x,y,z)
+    DR          : True/False flag that determines if the estimator is a cross-correlation between
+                  random positions/velocities and data velocities/positions or vice versa
+                  (only relevant for landy-szalay (D pos - R pos) and turner (R pos - D vel))
     weights1    : 1D array of length N, weights to be applied to objects in sample1
                   will be set to 1 by default if no argument is supplied
     weights2    : as above, but to be applied to objects in sample2.
@@ -218,9 +228,13 @@ def corrPairCount_smu(estimator, smax, swidth, muwidth, data = None, random = No
         equiv = 1
     elif (data is None) & (random is None):
         raise Exception("Please provide at least one catalog to the function.")
-    else:
+    elif (DR is True):
         sample1 = data
         sample2 = random
+        equiv = 0
+    else:
+        sample1 = random
+        sample2 = data
         equiv = 0
         
     # Check that the catalogs provided have the correct shape, throw error if not
