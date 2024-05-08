@@ -332,7 +332,7 @@ def calc_psi3(nD,nR,DD,RR,RD = None,estimator = "turner"):
         psi3 = turner(nD,nR,DD,RD,RR)
         return psi3
     else:
-        return "psi3 estimator must be either 'short' or 'turner'"
+        raise Exception("psi3 estimator must be either 'short' or 'turner'")
 
 def calc_xiGG(nD,nR,DD,RR,DR = None,estimator = "landy_szalay"):
     if (estimator == "peebles"):
@@ -342,7 +342,7 @@ def calc_xiGG(nD,nR,DD,RR,DR = None,estimator = "landy_szalay"):
         xiGG = landy_szalay(nD,nR,DD,DR,RR)
         return xiGG
     else:
-        return "psi3 estimator must be either 'peebles' or 'landy_szalay'" 
+        raise Exception("psi3 estimator must be either 'peebles' or 'landy_szalay'")
     
 # Multipole calculation for \xi_gu and \xi_gg
 def multipole_psi3(data, ell, del_mu, sBins):
