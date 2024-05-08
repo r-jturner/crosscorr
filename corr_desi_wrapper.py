@@ -71,6 +71,13 @@ def corrPairCount(estimator, smax, swidth, data = None, random = None, DR = True
     # If samples are not the same (neither data nor random is None), set equiv to 0
     # otherise (data or random is None, i.e. no catalogue given) set equiv to 1
     equiv = 0
+    if (DR is True):
+        sample1 = data
+        sample2 = random
+    elif (DR is False):
+        sample1 = random
+        sample2 = data
+        
     if (data is None):
         sample1 = random
         sample2 = random
@@ -81,14 +88,7 @@ def corrPairCount(estimator, smax, swidth, data = None, random = None, DR = True
         equiv = 1
     elif (data is None) & (random is None):
         raise Exception("Please provide at least one catalog to the function.")
-    elif (DR is True):
-        sample1 = data
-        sample2 = random
-        equiv = 0
-    else:
-        sample1 = random
-        sample2 = data
-        equiv = 0
+    
         
     # Check that the catalogs provided have the correct shape, throw error if not
     # Also store the total number of objects in each catalog to pass to C function
