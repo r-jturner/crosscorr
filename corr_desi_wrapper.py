@@ -7,25 +7,22 @@ _corr = cts.CDLL('src/obj/corrdesi.so')
 
 # Define a corr_smu function, and then the equivalent (x,y,z) functions too
 
-def corrPairCount(estimator, smax, swidth, data = None, random = None, DR = True, weights1 = None, weights2 = None, vel = "3D", nthreads = 1, verbose = False):
+def corrPairCount(sample1, sample2, smax, swidth, estimator, weights1 = None, weights2 = None, vel = "3D", nthreads = 1, verbose = False):
     """
     Python function wrapping C functions 'pairCounter' and 'pairCounter_xyz' that compute estimators
     of the 2PCF, v-v auto-corr and g-v cross-corr functions.
 
     Parameters
     -----------
+    sample1     : array with shape (N,4) or (N,6) (see 'vel'),
+                  (x,y,z,u) - positions in cartesian coordinates and radial velocity
+                  (x,y,z,v_x,v_y,v_z) - positions in cartesian coordinates and 3D components of velocity
+    sample2     : see above
+    smax        : maximum separation to consider when computing correlation estimates (Mpc/h)
+    swidth      : width of separation bins (Mpc/h)
     estimator   : string that determines which estimator to compute,
                   "psi1", "psi2", "psi3", "xiGG" or "geom" (to calculate additional geometric quantities) -- if vel = "u"
                   "psi1", "psi2", "psi3", "xiGG" or "3D" (to compute 3D correlations \\xi_gv and \\xi_vv) -- if vel = "3D"
-    smax        : maximum separation to consider when computing correlation estimates (Mpc/h)
-    swidth      : width of separation bins (Mpc/h)
-    data        : array with shape (N,4) or (N,6) (see 'vel'),
-                  (x,y,z,u) - positions in cartesian coordinates and radial velocity
-                  (x,y,z,v_x,v_y,v_z) - positions in cartesian coordinates and 3D components of velocity
-    random      : array with shape (N,3), containing positions in cartesian coordinates (x,y,z)
-    DR          : True/False flag that determines if the estimator is a cross-correlation between
-                  random positions/velocities and data velocities/positions or vice versa
-                  (only relevant for landy-szalay (D pos - R pos) and turner (R pos - D vel))
     weights1    : 1D array of length N, weights to be applied to objects in sample1
                   will be set to 1 by default if no argument is supplied
     weights2    : as above, but to be applied to objects in sample2.
@@ -54,41 +51,20 @@ def corrPairCount(estimator, smax, swidth, data = None, random = None, DR = True
     If estimator = "3D" the numerator and denominator are used to store the estimators of the 3D correlation functions
     \\xi_vv and \\xi_gv, respectively.
     """
+    # Check that the catalogs provided have the correct shape, throw error if not
+    # Also store the total number of objects in each catalog to pass to C function
     radial_check = 0
     if (vel == "3D"): 
         ncol = 6
         radial_check = 0 # also save a flag to check if we need to run the 3D or radial pair counter
-        if (random is not None):
-            random = np.column_stack( (random, np.zeros((random.shape[0], 3))) )
     elif (vel == "u"): 
         ncol = 4
         radial_check = 1
-        if (random is not None):
-            random = np.column_stack( (random, np.zeros(random.shape[0])) )
     else: raise Exception("'vel' argument must take either '3D' or 'u' as value, to indicate if the velocity information is three-dimensional or radial.")
-    
-    # Check which catalogues have been supplied, and define samples and set equiv flag accordingly
-    # If samples are not the same (neither data nor random is None), set equiv to 0
-    # otherise (data or random is None, i.e. no catalogue given) set equiv to 1
-    equiv = 0
-    if (DR is True):
-        sample1 = data
-        sample2 = random
-    elif (DR is False):
-        sample1 = random
-        sample2 = data
-        
-    if (data is None):
-        sample1 = random
-        sample2 = random
-        equiv = 1
-    elif (random is None):
-        sample1 = data
-        sample2 = data
-        equiv = 1
-    elif (data is None) & (random is None):
-        raise Exception("Please provide at least one catalog to the function.")
-    
+    if (sample1.shape[1] != ncol or sample2.shape[1] != ncol):
+        raise Exception("Please check that the number of columns is correct - if xyz == True, you must provide (vx, vy, vz) velocity info. as well as (x,y,z) positions.")
+    len_sample1 = sample1.shape[0]
+    len_sample2 = sample2.shape[0]
         
     # Check that the catalogs provided have the correct shape, throw error if not
     # Also store the total number of objects in each catalog to pass to C function
@@ -96,6 +72,15 @@ def corrPairCount(estimator, smax, swidth, data = None, random = None, DR = True
         raise Exception("Please check that the number of columns is correct - if xyz == True, you must provide (vx, vy, vz) velocity info. as well as (x,y,z) positions.")
     len_sample1 = sample1.shape[0]
     len_sample2 = sample2.shape[0]
+
+    # If samples are not equivalent, set parameter 'equiv' to 0
+    # otherwise set 'equiv' to 1
+    equiv = 0
+    if (len_sample1 != len_sample2):
+        equiv = 0
+    elif ((sample1 == sample2).all()):
+        equiv = 1
+    equiv = 0
 
     # Pass 1 or 0 to C function depending on 'verbose'
     if verbose == True:
@@ -179,24 +164,21 @@ def corrPairCount(estimator, smax, swidth, data = None, random = None, DR = True
     # Finally, return our desired outputs
     return numerator, denominator
 
-def corrPairCount_smu(estimator, smax, swidth, muwidth, data = None, random = None, DR = True, weights1 = None, weights2 = None, nthreads=1, verbose = False):
+def corrPairCount_smu(sample1, sample2, smax, swidth, muwidth, estimator, weights1 = None, weights2 = None, nthreads=1, verbose = False):
     """
     Python function wrapping C function 'pairCounter_smu' that computes multipoles
     of 2PCF and g-v cross-correlation function estimators
 
     Parameters
     -----------
-    estimator   : string that determines which estimator to compute,
-                  "psi3" or "xiGG"
+    sample1     : array with shape (N,4),
+                  (x,y,z,u) - positions in cartesian coordinates and radial velocity
+    sample2     : see above
     smax        : maximum separation to consider when computing correlation estimates (Mpc/h)
     swidth      : width of separation bins (Mpc/h)
     muwidth     : width of cos(theta_mu) bins
-    data        : array with shape (N,4)
-                  (x,y,z,u) - positions in cartesian coordinates and radial velocity
-    random      : array with shape (N,3), containing positions in cartesian coordinates (x,y,z)
-    DR          : True/False flag that determines if the estimator is a cross-correlation between
-                  random positions/velocities and data velocities/positions or vice versa
-                  (only relevant for landy-szalay (D pos - R pos) and turner (R pos - D vel))
+    estimator   : string that determines which estimator to compute,
+                  "psi3" or "xiGG"
     weights1    : 1D array of length N, weights to be applied to objects in sample1
                   will be set to 1 by default if no argument is supplied
     weights2    : as above, but to be applied to objects in sample2.
@@ -211,32 +193,7 @@ def corrPairCount_smu(estimator, smax, swidth, muwidth, data = None, random = No
                   pair of galaxies that fall in that (s, mu) bin
     denominator : as above, but instead contains the summed total of the denominator for the estimator
     """
-    if (random != None):
-            random = np.column_stack( (random, np.zeros(random.shape[0])) )
-                
-    # Check which catalogues have been supplied, and define samples and set equiv flag accordingly
-    # If samples are not the same (neither data nor random is None), set equiv to 0
-    # otherise (data or random is None, i.e. no catalogue given) set equiv to 1
-    equiv = 0
-    if (data is None):
-        sample1 = random
-        sample2 = random
-        equiv = 1
-    elif (random is None):
-        sample1 = data
-        sample2 = data
-        equiv = 1
-    elif (data is None) & (random is None):
-        raise Exception("Please provide at least one catalog to the function.")
-    elif (DR is True):
-        sample1 = data
-        sample2 = random
-        equiv = 0
-    else:
-        sample1 = random
-        sample2 = data
-        equiv = 0
-        
+    
     # Check that the catalogs provided have the correct shape, throw error if not
     # Also store the total number of objects in each catalog to pass to C function
     if (sample1.shape[1] != 4 or sample2.shape[1] != 4):
@@ -244,6 +201,14 @@ def corrPairCount_smu(estimator, smax, swidth, muwidth, data = None, random = No
     len_sample1 = sample1.shape[0]
     len_sample2 = sample2.shape[0]
 
+    # If samples are not equivalent, set parameter 'equiv' to 0
+    equiv = 0
+    if (len_sample1 != len_sample2):
+        equiv = 0
+    elif ((sample1 == sample2).all()):
+        # Otherwise set 'equiv' to 1
+        equiv = 1
+    
     # Pass 1 or 0 to C function depending on 'verbose'
     if verbose == True:
         verbose_C = 1
