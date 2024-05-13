@@ -109,7 +109,7 @@ struct output *pairCounter_xyz(int drows, int rrows, int equiv, const double sam
                                             sample2[j][3], sample2[j][4], sample2[j][5], swidth);
                         if (pair.index < numBins && pair.index >= 0) {
                             num[pair.index] += (weights1[i] * weights2[j])*pair.cosA*pair.cosB*(pair.uA*pair.uB);
-                            den[pair.index] += (weights1[i] * weights2[j])*pair.cosA*pair.cosA*pair.cosAB;
+                            den[pair.index] += (weights1[i] * weights2[j])*pair.cosA*pair.cosB*pair.cosAB;
                         }
                     }
                 }
