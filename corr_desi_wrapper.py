@@ -80,7 +80,6 @@ def corrPairCount(sample1, sample2, smax, swidth, estimator, weights1 = None, we
         equiv = 0
     elif ((sample1 == sample2).all()):
         equiv = 1
-    equiv = 0
 
     # Pass 1 or 0 to C function depending on 'verbose'
     if verbose == True:
