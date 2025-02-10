@@ -1,9 +1,14 @@
 # Import necessary modules
 import ctypes as cts
+import os
 import numpy as np
 from numpy.ctypeslib import ndpointer
 
-_corr = cts.CDLL('src/obj/corrdesi.so')
+# trying to make the reading of the shared object more flexible 
+# _corr = cts.CDLL('src/obj/corrdesi.so')
+current_dir = os.path.dirname(os.path.abspath(__file__))
+lib_path = os.path.join(current_dir, 'src/obj/corrdesi.so')
+_corr = cts.CDLL(lib_path)
 
 # Define a corr_smu function, and then the equivalent (x,y,z) functions too
 
@@ -274,50 +279,48 @@ def corrPairCount_smu(sample1, sample2, smax, swidth, muwidth, estimator, weight
     # Finally, return our desired outputs
     return numerator, denominator
 
-# Pair-counting functions (Peebles and Davis; Landy & Szalay; Turner, Blake, and Ruggeri)
-def peebles(nD,nR,DD,RR):
-    norm_sq = (nR**2) / (nD**2)
+# Pair-counting functions (Peebles & Davis; Landy & Szalay; Turner, Blake, & Ruggeri)
+def peebles(norm,DD,RR):
+    norm_sq = norm**2
     output = norm_sq*(DD/RR) - 1
     return np.nan_to_num(output)
 
-def landy_szalay(nD,nR,DD,DR,RR):
-    norm_sq = (nR**2) / (nD**2)
-    norm = nR / nD
+def landy_szalay(norm,DD,DR,RR):
+    norm_sq = norm**2
     output = norm_sq*(DD/RR) - norm*(DR/RR) + 1
     return np.nan_to_num(output)
 
-def turner(nD,nR,DD,RD,RRd):
-    norm_sq = (nR**2) / (nD**2)
-    norm = nR / nD
+def turner(norm,DD,RD,RRd):
+    norm_sq = norm**2
     output = norm_sq*(DD/RRd) - norm*(RD/RRd)
     return np.nan_to_num(output)
 
-def vel_short(nD,nR,DD,RR):
-    norm_sq = (nR**2) / (nD**2)
+def vel_short(norm,DD,RR):
+    norm_sq = norm**2
     output = norm_sq*(DD/RR)
     return np.nan_to_num(output)
 
 # Estimators of the correlation functions
-def calc_psi12(nD,nR,DD,RR):
-    psi12 = vel_short(nD,nR,DD,RR)
+def calc_psi12(norm,DD,RR):
+    psi12 = vel_short(norm,DD,RR)
     return psi12
 
-def calc_psi3(nD,nR,DD,RR,RD = None,estimator = "turner"):
+def calc_psi3(norm,DD,RD,RR = None,estimator = "turner"):
     if (estimator == "short"):
-        psi3 = vel_short(nD,nR,DD,RR)
+        psi3 = vel_short(norm,DD,RR)
         return psi3
     elif (estimator  == "turner"):
-        psi3 = turner(nD,nR,DD,RD,RR)
+        psi3 = turner(norm,DD,RD,RR)
         return psi3
     else:
         raise Exception("psi3 estimator must be either 'short' or 'turner'")
 
-def calc_xiGG(nD,nR,DD,RR,DR = None,estimator = "landy_szalay"):
+def calc_xiGG(norm,DD,DR,RR = None,estimator = "landy_szalay"):
     if (estimator == "peebles"):
-        xiGG = peebles(nD,nR,DD,RR)
+        xiGG = peebles(norm,DD,RR)
         return xiGG
     elif (estimator  == "landy_szalay"):
-        xiGG = landy_szalay(nD,nR,DD,DR,RR)
+        xiGG = landy_szalay(norm,DD,DR,RR)
         return xiGG
     else:
         raise Exception("psi3 estimator must be either 'peebles' or 'landy_szalay'")
