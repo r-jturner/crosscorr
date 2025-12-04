@@ -18,5 +18,11 @@ The module contains functions that are applicable to simulation data -- where th
 ## Usage
 I will add detailed examples, but see the notebook 'crosscorr_example.ipynb' for a rudimentary look into the functionality of **crosscorr**
 
+Briefly, *corrPairCount* is used to measure correlations in (s) space, while *corrPairCount_smu* is used to measure correlations in (s, $\mu$) space. By construction, *corrPairCount_smu* can only accept radial velocity data, while *corrPairCount* can accept radial velocities or 3D velocity information.
+
+There are several pair counting estimators included, including the Peebles & Davis estimator and the Landy & Szalay estimator. Users should feel free to use the numerators and denominators producing by the pair-counting functions to create their own estimators for their own purposes, too.
+
+The *calc_XXXX* functions can be used to measure any of the galaxy or velocity auto- or cross-correlations, using the outputs from the *corrPairCount* functions. The *multipole_XXXX* functions can take the final (s,$\mu$) correlation function measurements produced by these functions and decompose them into their non-zero multipole moments.
+
 ## Support
 For support, contact Ryan Turner (ryan.turner@anu.edu.au)
