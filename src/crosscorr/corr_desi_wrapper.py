@@ -4,16 +4,34 @@ import os
 import numpy as np
 from numpy.ctypeslib import ndpointer
 from pathlib import Path
+import glob
 
 current_dir = Path(__file__).resolve().parent
-lib_path    = current_dir / "obj" / "corrdesi.so"
-_corr       = cts.CDLL(str(lib_path))
+#lib_path    = current_dir / "obj" / "corrdesi.so"
 
-# trying to make the reading of the shared object more flexible 
-# _corr = cts.CDLL('src/obj/corrdesi.so')
-#current_dir = os.path.dirname(os.path.abspath(__file__))
-#lib_path = os.path.join(current_dir, 'src/obj/corrdesi.so')
-#_corr = cts.CDLL(lib_path)
+# Try multiple locations for the compiled extension
+# 1. Check obj/ subdirectory (used by build.sh during local development)
+# 2. Check current directory with platform-specific suffix (used by pip install)
+
+lib_path = None
+
+# First try the obj/ subdirectory (build.sh output)
+obj_dir = current_dir / "obj" / "corrdesi.so"
+if obj_dir.exists():
+    lib_path = str(obj_dir)
+
+# Fall back to platform-specific .so in current directory (pip install output)
+if lib_path is None:
+    so_files = glob.glob(str(current_dir / "corrdesi*.so"))
+    if so_files:
+        lib_path = so_files[0]
+
+if lib_path is None:
+    raise ImportError(
+        f"Could not find compiled corrdesi extension in {current_dir}. "
+        "Try running 'build.sh' or 'pip install -e .'"
+    )
+_corr       = cts.CDLL(str(lib_path))
 
 # Define a corr_smu function, and then the equivalent (x,y,z) functions too
 

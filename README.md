@@ -83,8 +83,8 @@ Then modify the C code and re-import. Or reinstall with `CC=gcc-16 pip install -
 ## Usage
 See the notebook 
 ```text
-crosscorr_example.ipynb
-``` 
+examples/crosscorr_example.ipynb
+```
 for a rudimentary look into the functionality of **crosscorr**. More detailed examples will be added in future.
 
 Briefly, *corrPairCount* is used to measure correlations in (s) space, while *corrPairCount_smu* is used to measure correlations in (s, $\mu$) space. By construction, *corrPairCount_smu* can only accept radial velocity data, while *corrPairCount* can accept radial velocities or 3D velocity information.
