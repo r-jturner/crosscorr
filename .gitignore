@@ -1,2 +1,46 @@
 # Byte-compiled DLL files
 __pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Build artifacts
+csrc/obj/
+src/crosscorr/obj/
+
+# macOS
+.DS_Store
+
+# Development
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.iml
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/

@@ -1,22 +1,91 @@
 # crosscorr
-A suite of functions that can compute various cosmological correlation functions, written in C and packaged into a python module
+A suite of functions for computing cosmological galaxy and velocity correlation functions, written in C with a python interface
 
-**crosscorr** is a python module designed for use in the Dark Energy Spectroscopic Instrument (DESI) survey, specifically for data from the Peculiar Velocity (PV) survey.
+**crosscorr** was developed for use with the Dark Energy Spectroscopic Instrument (DESI) Peculiar Velocity (PV) survey. The bulk of the computational work is implemented in C with OpenMP parallelisation for more efficient galaxy pair counting. Python is used to provide user-friendly functions for scientific analysis.
 
-**crosscorr** is built upon a foundation of C code, used to compute the auto-correlation functions and cross-correlation function of galaxy clustering and peculiar velocity statistics.
-The module contains functions that are applicable to simulation data -- where the full 3D velocity field is known -- and to observational data -- where only the radial component of the velocity is measurable, and is capable of handling cases where the effects of redshift-space distortions (RSDs) are either included or ignored.
+The package supports:
+- Galaxy auto-correlations
+- Velocity auto-correlations
+- Galaxy-velocity cross-correlations
+- Radial velocity analysis (observational data)
+- 3D velocity analysis (simulation data)
+- Correlations in (r) space and (r, mu) space
+- Multipole decompositions of the correlation functions
+
+## Repo structure
+```text
+crosscorr/
+├── setup.py                 # C extension configuration
+├── pyproject.toml           # Project metadata and build configuration
+├── README.md
+├── LICENSE
+├── MANIFEST.in
+├── include/
+│   └── corr_desi.h
+├── csrc/                    # C source code
+│   ├── corr_desi.c
+│   ├── corr_desi_smu.c
+│   ├── corr_desi_xyz.c
+│   ├── Makefile
+│   └── obj/                 # Compiled objects (build.sh output)
+├── src/
+│   └── crosscorr/           # Python package
+│       ├── __init__.py
+│       ├── corr_desi_wrapper.py
+│       └── obj/             # Compiled .so files (pip install output)
+├── examples/
+│   └── crosscorr_example.ipynb
+└── tests/
+```
+The C source code is located in `csrc/`, while the Python package is located in `src/crosscorr/`. The compiled extension can be found in `src/crosscorr/obj/` after installation.
+---
 
 ## Installation
-1. Clone this repo by pasting the following into your terminal
 
-        git clone https://github.com/r-jturner/crosscorr.git
+### Quick Start
+The C extension is automatically compiled during installation. Just run:
 
-2. Inside /src/, run the Makefile using 'make' - you may need to modify the Makefile to match your compiler (this compiler must be able to handle OpenMP code). This will compile the C code in the repo and create a shared object (.so file) that is required by the python wrapper.
+#### Linux
+```bash
+git clone https://github.com/r-jturner/crosscorr.git
+cd crosscorr
+pip install -e .
+```
 
-3. It should then be possible to make python scripts within the directory using the crosscorr functions, as long as you import 'corr_desi_wrapper' along with your usual packages.
+#### macOS
+Apple clang doesn't provide OpenMP support by default. Install GCC first:
+```bash
+brew install gcc
+git clone https://github.com/r-jturner/crosscorr.git
+cd crosscorr
+CC=gcc-16 pip install -e .
+```
+(Replace `gcc-16` with whichever GCC version is in `/opt/homebrew/bin/`)
+
+### Verify Installation
+```python
+import crosscorr
+print(crosscorr.__version__)
+```
+
+### Development Installation (Optional)
+If you're modifying the C code and want faster iteration, you can compile directly:
+```bash
+cd csrc
+make CC=gcc-16 rebuild  # macOS; omit CC= on Linux
+cd ..
+```
+
+Then modify the C code and re-import. Or reinstall with `CC=gcc-16 pip install -e .` (macOS).
+
+---
 
 ## Usage
-I will add detailed examples, but see the notebook 'crosscorr_example.ipynb' for a rudimentary look into the functionality of **crosscorr**
+See the notebook 
+```text
+crosscorr_example.ipynb
+``` 
+for a rudimentary look into the functionality of **crosscorr**. More detailed examples will be added in future.
 
 Briefly, *corrPairCount* is used to measure correlations in (s) space, while *corrPairCount_smu* is used to measure correlations in (s, $\mu$) space. By construction, *corrPairCount_smu* can only accept radial velocity data, while *corrPairCount* can accept radial velocities or 3D velocity information.
 
@@ -25,4 +94,7 @@ There are several pair counting estimators included, including the Peebles & Dav
 The *calc_XXXX* functions can be used to measure any of the galaxy or velocity auto- or cross-correlations, using the outputs from the *corrPairCount* functions. The *multipole_XXXX* functions can take the final (s,$\mu$) correlation function measurements produced by these functions and decompose them into their non-zero multipole moments.
 
 ## Support
-For support, contact Ryan Turner (ryan.turner@anu.edu.au)
+For support, contact: 
+
+Ryan Turner 
+ryan.turner@anu.edu.au

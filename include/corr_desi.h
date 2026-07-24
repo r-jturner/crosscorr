@@ -1,6 +1,16 @@
 #ifndef __CORR_H__
 #define __CORR_H__
 
+typedef enum {
+	EST_PSI1,
+	EST_PSI2,
+	EST_PSI3,
+	EST_XIGG,
+	EST_GEOM,
+	EST_3D,
+	EST_INVALID
+} Estimator;
+
 struct lin_corr {
 	/* defining structure for auto-correlation function data */
 	double cosA;
@@ -11,6 +21,7 @@ struct lin_corr {
 	double uA;
 	double uB;
 	int index;
+	int valid;
 };
 
 struct nonlin_corr {
@@ -23,6 +34,7 @@ struct nonlin_corr {
 	double uB;
 	int index;
 	int muIndex;
+	int valid;
 };
 
 struct output {
@@ -50,10 +62,10 @@ struct nonlin_corr calcCorr_xyz_smu(double x1, double y1, double z1, double x2, 
                             double vx1, double vy1, double vz1, double vx2, double vy2, double vz2, double width, double mu_width);
 struct output *pairCounter_xyz(int drows, int rrows, int equiv, const double sample1[drows][6], const double sample2[rrows][6], 
                 const double weights1[drows], const double weights2[rrows], int smax, int swidth, const char* estimator, int nthreads, int verbose);
-int whichParam(const char* input);
-int whichParam_smu(const char* input);
-int whichParam_xyz(const char* input);
+Estimator whichParam(const char* input);
+Estimator whichParam_smu(const char* input);
+Estimator whichParam_xyz(const char* input);
 void free_structmemory(struct output *ptr);
-void free_arraymemory(double *ptr);
+//void free_arraymemory(double *ptr);
 
 #endif

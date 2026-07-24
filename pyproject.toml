@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "crosscorr"
+version = "0.1.0"
+description = "Cosmological correlation function estimators for galaxy and peculiar velocity surveys"
+readme = "README.md"
+requires-python = ">=3.10"
+
+authors = [
+	{name = "Ryan J Turner", email = "ryan.turner@anu.edu.au"}
+]
+
+license = "MIT"
+
+keywords = [
+	"cosmology",
+	"galaxy clustering",
+	"peculiar velocities",
+	"correlation functions"
+]
+
+classifiers = [
+	"Development Status :: 3 - Alpha",
+	"Programming Language :: Python :: 3",
+	"Programming Language :: C",
+	"Topic :: Scientific/Engineering :: Astronomy"
+]
+
+dependencies = [
+	"numpy>=1.23"
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

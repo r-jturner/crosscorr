@@ -3,12 +3,17 @@ import ctypes as cts
 import os
 import numpy as np
 from numpy.ctypeslib import ndpointer
+from pathlib import Path
+
+current_dir = Path(__file__).resolve().parent
+lib_path    = current_dir / "obj" / "corrdesi.so"
+_corr       = cts.CDLL(str(lib_path))
 
 # trying to make the reading of the shared object more flexible 
 # _corr = cts.CDLL('src/obj/corrdesi.so')
-current_dir = os.path.dirname(os.path.abspath(__file__))
-lib_path = os.path.join(current_dir, 'src/obj/corrdesi.so')
-_corr = cts.CDLL(lib_path)
+#current_dir = os.path.dirname(os.path.abspath(__file__))
+#lib_path = os.path.join(current_dir, 'src/obj/corrdesi.so')
+#_corr = cts.CDLL(lib_path)
 
 # Define a corr_smu function, and then the equivalent (x,y,z) functions too
 
@@ -56,6 +61,12 @@ def corrPairCount(sample1, sample2, smax, swidth, estimator, weights1 = None, we
     If estimator = "3D" the numerator and denominator are used to store the estimators of the 3D correlation functions
     \\xi_vv and \\xi_gv, respectively.
     """
+    # Validate widths
+    if swidth <= 0:
+        raise ValueError(
+            "swidth must be > 0"
+        )
+
     # Check that the catalogs provided have the correct shape, throw error if not
     # Also store the total number of objects in each catalog to pass to C function
     radial_check = 0
@@ -73,17 +84,17 @@ def corrPairCount(sample1, sample2, smax, swidth, estimator, weights1 = None, we
         
     # Check that the catalogs provided have the correct shape, throw error if not
     # Also store the total number of objects in each catalog to pass to C function
-    if (sample1.shape[1] != ncol or sample2.shape[1] != ncol):
-        raise Exception("Please check that the number of columns is correct - if xyz == True, you must provide (vx, vy, vz) velocity info. as well as (x,y,z) positions.")
-    len_sample1 = sample1.shape[0]
-    len_sample2 = sample2.shape[0]
+    #iif (sample1.shape[1] != ncol or sample2.shape[1] != ncol):
+    #    raise Exception("Please check that the number of columns is correct - if xyz == True, you must provide (vx, vy, vz) velocity info. as well as (x,y,z) positions.")
+    #len_sample1 = sample1.shape[0]
+    #len_sample2 = sample2.shape[0]
 
     # If samples are not equivalent, set parameter 'equiv' to 0
     # otherwise set 'equiv' to 1
     equiv = 0
     if (len_sample1 != len_sample2):
         equiv = 0
-    elif ((sample1 == sample2).all()):
+    elif np.array_equal(sample1, sample2):
         equiv = 1
 
     # Pass 1 or 0 to C function depending on 'verbose'
@@ -93,14 +104,14 @@ def corrPairCount(sample1, sample2, smax, swidth, estimator, weights1 = None, we
         verbose_C = 0
 
     # Check if weight vectors have been supplied or not, if not set weights to be a vector of ones
-    if weights1 == None:
+    if weights1 is None:
         weights1 = np.ones(len_sample1)
-    if weights2 == None:
+    if weights2 is None:
         weights2 = np.ones(len_sample2)
     
     # Prepare inputs to be passed to C
-    sample1, sample2 = np.ascontiguousarray(sample1), np.ascontiguousarray(sample2)
-    weights1, weights2 = np.ascontiguousarray(weights1), np.ascontiguousarray(weights2)
+    sample1, sample2 = np.ascontiguousarray(sample1, dtype=np.float64), np.ascontiguousarray(sample2, dtype=np.float64)
+    weights1, weights2 = np.ascontiguousarray(weights1, dtype=np.float64), np.ascontiguousarray(weights2, dtype=np.float64)
     c_estimator = estimator.encode('utf-8')
 
     # Define a class to hold the outputs of the 'lin_corr' struct
@@ -154,6 +165,11 @@ def corrPairCount(sample1, sample2, smax, swidth, estimator, weights1 = None, we
     elif (radial_check == 1):
         result = _corr.pairCounter(len_sample1, len_sample2, equiv, sample1, sample2,
                                     weights1, weights2, smax, swidth, c_estimator, nthreads, verbose_C)
+
+    if not result:
+        raise RuntimeError(
+            "pairCounter returned NULL"
+        )
     
     # Separately save the elements of the result to numpy arrays
     numerator = np.array(result[0].num[0][:])
@@ -161,8 +177,8 @@ def corrPairCount(sample1, sample2, smax, swidth, estimator, weights1 = None, we
 
     # Since we dynamically allocated memory to the structure (and its arrays) based on the number
     # of objects in our samples, we have to free that memory ourselves to avoid leaks
-    _corr.free_arraymemory(result[0].num)
-    _corr.free_arraymemory(result[0].den)
+    #_corr.free_arraymemory(result[0].num)
+    #_corr.free_arraymemory(result[0].den)
     _corr.free_structmemory(result)
 
     # Finally, return our desired outputs
@@ -197,7 +213,16 @@ def corrPairCount_smu(sample1, sample2, smax, swidth, muwidth, estimator, weight
                   pair of galaxies that fall in that (s, mu) bin
     denominator : as above, but instead contains the summed total of the denominator for the estimator
     """
-    
+    # Validate widths
+    if swidth <= 0:
+        raise ValueError(
+            "swidth must be > 0"
+        )
+    if muwidth <= 0:
+        raise ValueError(
+            "muwidth must be > 0"
+        )
+
     # Check that the catalogs provided have the correct shape, throw error if not
     # Also store the total number of objects in each catalog to pass to C function
     if (sample1.shape[1] != 4 or sample2.shape[1] != 4):
@@ -209,7 +234,7 @@ def corrPairCount_smu(sample1, sample2, smax, swidth, muwidth, estimator, weight
     equiv = 0
     if (len_sample1 != len_sample2):
         equiv = 0
-    elif ((sample1 == sample2).all()):
+    elif np.array_equal(sample1, sample2):
         # Otherwise set 'equiv' to 1
         equiv = 1
     
@@ -220,14 +245,14 @@ def corrPairCount_smu(sample1, sample2, smax, swidth, muwidth, estimator, weight
         verbose_C = 0
 
     # Check if weight vectors have been supplied or not, if not set weights to be a vector of ones
-    if weights1 == None:
+    if weights1 is None:
         weights1 = np.ones(len_sample1)
-    if weights2 == None:
+    if weights2 is None:
         weights2 = np.ones(len_sample2)
     
     # Prepare inputs to be passed to C
-    sample1, sample2 = np.ascontiguousarray(sample1), np.ascontiguousarray(sample2)
-    weights1, weights2 = np.ascontiguousarray(weights1), np.ascontiguousarray(weights2)
+    sample1, sample2 = np.ascontiguousarray(sample1, dtype=np.float64), np.ascontiguousarray(sample2, dtype=np.float64)
+    weights1, weights2 = np.ascontiguousarray(weights1, dtype=np.float64), np.ascontiguousarray(weights2, dtype=np.float64)
     c_estimator = estimator.encode('utf-8')
 
     # Define a class to hold the outputs of the 'lin_corr' struct
@@ -265,6 +290,11 @@ def corrPairCount_smu(sample1, sample2, smax, swidth, muwidth, estimator, weight
     # Run the function 'pairCounter'
     result = _corr.pairCounter_smu(len_sample1, len_sample2, equiv, sample1, sample2,
                                weights1, weights2, smax, swidth, muwidth, c_estimator, nthreads, verbose_C)
+
+    if not result:
+        raise RuntimeError(
+            "pairCounter_smu returned NULL"
+        )
     
     # Separately save the elements of the result to numpy arrays
     numerator = np.array(result[0].num[0][:])
@@ -272,8 +302,8 @@ def corrPairCount_smu(sample1, sample2, smax, swidth, muwidth, estimator, weight
 
     # Since we dynamically allocated memory to the structure (and its arrays) based on the number
     # of objects in our samples, we have to free that memory ourselves to avoid leaks
-    _corr.free_arraymemory(result[0].num)
-    _corr.free_arraymemory(result[0].den)
+    #_corr.free_arraymemory(result[0].num)
+    #_corr.free_arraymemory(result[0].den)
     _corr.free_structmemory(result)
 
     # Finally, return our desired outputs
@@ -364,11 +394,9 @@ def multipole_xigg(data, ell, del_mu, sBins):
         l4_range = 0.125*(35.*sum_range**4. - 30.*sum_range**2. + 3.0)
         multipole_data = data * l4_range
     else: raise Exception("Please ask for a multipole of the 2PCF that has non-zero signal ( monopole (0), quadrupole (2) or hexadecapole (4) )!")
-    datlen = data.shape[1]
-    halflen = int(datlen/2)
-    sumdata = np.zeros((sBins,halflen))
-    i = 0
-    while i < sum_range.size/2: 
-        sumdata[:,(halflen - (i+1))] = multipole_data[:,i] + multipole_data[:,(datlen - (i+1))]
-        i += 1
+    datlen = multipole_data.shape[1]
+    halflen = datlen // 2
+    left = multipole_data[:, :halflen]
+    right = multipole_data[:, halflen:]
+    sumdata = left + np.flip(right, axis=1)
     return np.sum(sumdata, axis=1)
