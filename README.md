@@ -38,7 +38,7 @@ crosscorr/
 └── tests/
 ```
 The C source code is located in `csrc/`, while the Python package is located in `src/crosscorr/`. The compiled extension can be found in `src/crosscorr/obj/` after installation.
----
+
 
 ## Installation
 
