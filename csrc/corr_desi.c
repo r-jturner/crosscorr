@@ -147,6 +147,9 @@ struct output *pairCounter(int drows, int rrows, int equiv, const double sample1
 
     Estimator param = whichParam(estimator);
 	if (param == EST_INVALID) {
+		free(results->num);
+		free(results->den);
+		free(results);
 		fprintf(stderr,
 				"Unknown estimator '%s'\n",estimator);
 		return NULL;
@@ -174,7 +177,7 @@ struct output *pairCounter(int drows, int rrows, int equiv, const double sample1
 		for (i = 0; i < drows; i++) {
 			for (j = 0; j < rrows; j++) {
 				pair = calcCorr(sample1[i][0], sample1[i][1], sample1[i][2],
-								sample2[j][0], sample2[j][1], sample2[i][2],
+								sample2[j][0], sample2[j][1], sample2[j][2],
 								sample1[i][3], sample2[j][3], swidth);
 				if(!pair.valid)
 					continue;
